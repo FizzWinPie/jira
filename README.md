@@ -17,6 +17,10 @@ A basic MERN demo app that shows a **Jira-style board** with Southwest Airlines 
 - **React** (Vite) frontend
 - **Node.js** ESM
 
+## Deploy on Render
+
+See **[DEPLOY.md](./DEPLOY.md)** for MongoDB Atlas, `render.yaml` Blueprint, and environment variables. One URL serves the UI and API (`/api/health` for health checks).
+
 ## Quick start
 
 ### Prerequisites

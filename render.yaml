@@ -1,0 +1,27 @@
+# Render Blueprint — single Web Service (API + React static)
+# https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: swa-change-portal
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GEMINI_MODEL
+        value: gemini-2.0-flash
+      - key: USE_MOCK_AI
+        value: "false"
+      - key: SEED_ON_START
+        value: "true"
+      - key: JIRA_WEBHOOK_SECRET
+        sync: false

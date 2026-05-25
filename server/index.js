@@ -2,24 +2,40 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import jiraRoutes from './routes/jira.js';
 import changeRequestRoutes from './routes/changeRequests.js';
 import JiraTicket from './models/JiraTicket.js';
 import { dummyJiraTickets } from './data/dummyJira.js';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 5001;
 const MONGODB_URI =
-process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/swa-change-requests';
-console.log(MONGODB_URI)
+  process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/swa-change-requests';
+const isProduction = process.env.NODE_ENV === 'production';
+const clientDist = path.join(__dirname, '../client/dist');
 
 const app = express();
-app.use(cors());
+
+const corsOrigins = process.env.CLIENT_URL
+  ? process.env.CLIENT_URL.split(',').map((s) => s.trim())
+  : [];
+if (corsOrigins.length > 0) {
+  app.use(cors({ origin: corsOrigins }));
+} else {
+  app.use(cors());
+}
+
 app.use(express.json());
 
 app.get('/api/health', (_req, res) => {
   res.json({
     ok: true,
-    ai: process.env.GEMINI_API_KEY ? 'gemini' : 'mock',
+    env: process.env.NODE_ENV || 'development',
+    ai: process.env.GEMINI_API_KEY && process.env.USE_MOCK_AI !== 'true'
+      ? 'gemini'
+      : 'mock',
   });
 });
 
@@ -30,20 +46,40 @@ async function ensureSeed() {
   const count = await JiraTicket.countDocuments();
   if (count === 0) {
     await JiraTicket.insertMany(dummyJiraTickets);
-    console.log(`Auto-seeded ${dummyJiraTickets.length} Jira tickets.`);
+    console.log(`Seeded ${dummyJiraTickets.length} Jira tickets.`);
   }
+}
+
+function serveClient() {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    res.sendFile(path.join(clientDist, 'index.html'), (err) => {
+      if (err) next(err);
+    });
+  });
 }
 
 async function start() {
   try {
     await mongoose.connect(MONGODB_URI);
-    // await ensureSeed();
-    app.listen(PORT, () => {
-      console.log(`Server running on http://localhost:${PORT}`);
+    console.log('Connected to MongoDB');
+
+    if (process.env.SEED_ON_START === 'true') {
+      await ensureSeed();
+    }
+
+    if (isProduction) {
+      serveClient();
+      console.log('Serving React app from client/dist');
+    }
+
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`Server listening on port ${PORT}`);
       console.log(
-        process.env.GEMINI_API_KEY
+        process.env.GEMINI_API_KEY && process.env.USE_MOCK_AI !== 'true'
           ? 'AI: Gemini enabled'
-          : 'AI: using mock drafts (set GEMINI_API_KEY for live AI)'
+          : 'AI: mock drafts'
       );
     });
   } catch (err) {
