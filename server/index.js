@@ -6,6 +6,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import jiraRoutes from './routes/jira.js';
 import changeRequestRoutes from './routes/changeRequests.js';
+import webhookRoutes from './routes/webhooks.js';
 import JiraTicket from './models/JiraTicket.js';
 import { dummyJiraTickets } from './data/dummyJira.js';
 
@@ -40,6 +41,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/jira', jiraRoutes);
+app.use('/api/webhooks', webhookRoutes);
 app.use('/api/change-requests', changeRequestRoutes);
 
 async function ensureSeed() {

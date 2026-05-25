@@ -1,9 +1,7 @@
 import { Router } from 'express';
 import ChangeRequest from '../models/ChangeRequest.js';
 import JiraTicket from '../models/JiraTicket.js';
-import { generatePlanningFromJira } from '../services/aiService.js';
-import { buildChangeMetadata, nextChangeNumber } from '../utils/changeRequestDefaults.js';
-import { createCtasksForChange } from '../utils/ctaskDefaults.js';
+import { createChangeRequestFromTicket } from '../services/changeRequestService.js';
 import ctaskRoutes from './ctasks.js';
 
 const router = Router();
@@ -38,54 +36,27 @@ router.post('/generate', async (req, res) => {
       return res.status(400).json({ error: 'jiraKey is required' });
     }
 
-    const ticket = await JiraTicket.findOne({ key: jiraKey });
+    const ticket = await JiraTicket.findOne({
+      key: String(jiraKey).trim().toUpperCase(),
+    });
     if (!ticket) {
       return res.status(404).json({ error: `Jira ticket ${jiraKey} not found` });
     }
 
-    const existing = await ChangeRequest.findOne({ jiraKey });
-    if (existing) {
+    const crResult = await createChangeRequestFromTicket(ticket);
+
+    if (crResult.existing) {
       return res.status(409).json({
         error: 'Change request already exists for this ticket',
-        changeRequest: existing,
+        changeRequest: crResult.changeRequest,
+        ctasks: crResult.ctasks,
       });
     }
 
-    const aiResult = await generatePlanningFromJira(ticket);
-    const metadata = buildChangeMetadata(ticket);
-    const number = await nextChangeNumber(ChangeRequest);
-
-    const changeRequest = await ChangeRequest.create({
-      number,
-      jiraKey: ticket.key,
-      title: aiResult.title || ticket.summary,
-      shortDescription: metadata.shortDescription,
-      requestedBy: metadata.requestedBy,
-      sourceOfChange: metadata.sourceOfChange,
-      primaryBusinessService: metadata.primaryBusinessService,
-      maintenanceWindow: metadata.maintenanceWindow,
-      location: metadata.location,
-      changeType: aiResult.changeType || metadata.changeType,
-      state: metadata.state,
-      environment: aiResult.environment || metadata.environment,
-      owningGroup: aiResult.owningGroup || metadata.owningGroup,
-      changeOwner: metadata.changeOwner,
-      plannedStartDate: metadata.plannedStartDate,
-      plannedEndDate: metadata.plannedEndDate,
-      planning: aiResult.planning,
-      notes: '',
-      pir: '',
-      processIntegration: '',
-      governance: '',
-      aiGenerated: true,
-    });
-
-    const ctasks = await createCtasksForChange(changeRequest, ticket);
-
     res.status(201).json({
-      changeRequest,
-      ctasks,
-      aiSource: aiResult.source,
+      changeRequest: crResult.changeRequest,
+      ctasks: crResult.ctasks,
+      aiSource: crResult.aiSource,
     });
   } catch (err) {
     res.status(500).json({ error: err.message });

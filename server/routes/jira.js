@@ -11,6 +11,11 @@ router.get('/board', async (_req, res) => {
       acc[col] = tickets.filter((t) => t.status === col);
       return acc;
     }, {});
+    const knownStatuses = new Set(BOARD_COLUMNS);
+    const other = tickets.filter((t) => !knownStatuses.has(t.status));
+    if (other.length > 0) {
+      board['In Progress'] = [...(board['In Progress'] || []), ...other];
+    }
     res.json({ columns: BOARD_COLUMNS, board, tickets });
   } catch (err) {
     res.status(500).json({ error: err.message });

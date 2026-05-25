@@ -185,12 +185,14 @@ export async function nextChangeNumber(ChangeRequest) {
   return `CHG${String(max + 1).padStart(6, '0')}`;
 }
 
-export function buildChangeMetadata(ticket) {
+export function buildChangeMetadata(ticket, options = {}) {
   const { plannedStartDate, plannedEndDate } = buildPlannedWindow();
+  const requestedBy =
+    options.requestedBy?.trim() || pickRequestedBy(ticket);
   return {
     shortDescription: ticket.summary,
-    requestedBy: pickRequestedBy(ticket),
-    sourceOfChange: 'Jira',
+    requestedBy,
+    sourceOfChange: options.sourceOfChange || 'Jira',
     primaryBusinessService: inferPrimaryBusinessService(ticket),
     maintenanceWindow: inferMaintenanceWindow(ticket),
     location: inferLocation(ticket),
