@@ -1,14 +1,48 @@
+import { useEffect, useState } from 'react';
+import { fetchChangeTasks } from '../api';
 import ChangeRequestTabs from './ChangeRequestTabs';
+import ChangeTasksTable from './ChangeTasksTable';
 
 function stateClass(state) {
   const key = (state || 'in progress').toLowerCase().replace(/\s+/g, '-');
   return `state-pill state-${key}`;
 }
 
-export default function ChangeRequestDetail({ changeRequest }) {
-  if (!changeRequest) return null;
+export default function ChangeRequestDetail({ changeRequest, initialCtasks }) {
+  const [ctasks, setCtasks] = useState(initialCtasks || []);
+  const [ctasksLoading, setCtasksLoading] = useState(false);
 
-  const num = changeRequest.number || changeRequest.crId;
+  const num = changeRequest?.number || changeRequest?.crId;
+
+  useEffect(() => {
+    if (!num) {
+      setCtasks([]);
+      return;
+    }
+    if (initialCtasks?.length) {
+      setCtasks(initialCtasks);
+      return;
+    }
+
+    let cancelled = false;
+    setCtasksLoading(true);
+    fetchChangeTasks(num)
+      .then((data) => {
+        if (!cancelled) setCtasks(data);
+      })
+      .catch(() => {
+        if (!cancelled) setCtasks([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCtasksLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [num, initialCtasks]);
+
+  if (!changeRequest) return null;
 
   const rows = [
     { label: 'Number', value: num },
@@ -54,6 +88,11 @@ export default function ChangeRequestDetail({ changeRequest }) {
       </dl>
 
       <ChangeRequestTabs changeRequest={changeRequest} />
+
+      <section className="ctask-section">
+        <h4 className="ctask-section-heading">Change tasks (CTASK)</h4>
+        <ChangeTasksTable ctasks={ctasks} loading={ctasksLoading} />
+      </section>
     </div>
   );
 }

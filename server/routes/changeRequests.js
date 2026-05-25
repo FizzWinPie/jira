@@ -3,8 +3,12 @@ import ChangeRequest from '../models/ChangeRequest.js';
 import JiraTicket from '../models/JiraTicket.js';
 import { generatePlanningFromJira } from '../services/aiService.js';
 import { buildChangeMetadata, nextChangeNumber } from '../utils/changeRequestDefaults.js';
+import { createCtasksForChange } from '../utils/ctaskDefaults.js';
+import ctaskRoutes from './ctasks.js';
 
 const router = Router();
+
+router.use('/:number/ctasks', ctaskRoutes);
 
 router.get('/', async (_req, res) => {
   try {
@@ -76,8 +80,11 @@ router.post('/generate', async (req, res) => {
       aiGenerated: true,
     });
 
+    const ctasks = await createCtasksForChange(changeRequest, ticket);
+
     res.status(201).json({
       changeRequest,
+      ctasks,
       aiSource: aiResult.source,
     });
   } catch (err) {

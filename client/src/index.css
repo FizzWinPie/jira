@@ -467,6 +467,33 @@ button {
   font-size: 0.95rem;
 }
 
+.ctask-section {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 2px solid var(--border);
+}
+
+.ctask-section-heading {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--swa-blue-dark);
+}
+
+.ctask-table-wrap {
+  margin-top: 0;
+}
+
+.state-ctask-open {
+  background: #e3edff;
+  color: var(--swa-blue);
+}
+
+.state-ctask-closed {
+  background: #eef0f4;
+  color: var(--muted);
+}
+
 .cr-subtabs-wrap {
   margin-top: 1.5rem;
   padding-top: 1.25rem;

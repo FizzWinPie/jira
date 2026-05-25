@@ -28,6 +28,14 @@ export async function generateChangeRequest(jiraKey) {
   return data;
 }
 
+export async function fetchChangeTasks(changeNumber) {
+  const res = await fetch(
+    `${API}/change-requests/${encodeURIComponent(changeNumber)}/ctasks`
+  );
+  if (!res.ok) throw new Error('Failed to load change tasks');
+  return res.json();
+}
+
 export async function fetchHealth() {
   const res = await fetch(`${API}/health`);
   return res.json();

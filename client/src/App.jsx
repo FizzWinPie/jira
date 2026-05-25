@@ -20,6 +20,7 @@ export default function App() {
   const [changeRequests, setChangeRequests] = useState([]);
   const [selectedKey, setSelectedKey] = useState(null);
   const [selectedCr, setSelectedCr] = useState(null);
+  const [selectedCtasks, setSelectedCtasks] = useState(null);
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [message, setMessage] = useState(null);
@@ -56,9 +57,10 @@ export default function App() {
     setGenerating(true);
     setMessage(null);
     try {
-      const { changeRequest, aiSource } = await generateChangeRequest(jiraKey);
+      const { changeRequest, ctasks, aiSource } = await generateChangeRequest(jiraKey);
       setChangeRequests((prev) => [changeRequest, ...prev]);
       setSelectedCr(changeRequest);
+      setSelectedCtasks(ctasks || null);
       setTab('changes');
       const sourceLabel =
         aiSource === 'gemini'
@@ -73,6 +75,7 @@ export default function App() {
     } catch (err) {
       if (err.status === 409 && err.data?.changeRequest) {
         setSelectedCr(err.data.changeRequest);
+        setSelectedCtasks(null);
         setTab('changes');
         setMessage({
           type: 'info',
@@ -152,9 +155,16 @@ export default function App() {
                 <ChangeRequestsTable
                   changeRequests={changeRequests}
                   selectedNumber={crNumber(selectedCr)}
-                  onSelect={(cr) => setSelectedCr(cr)}
+                  onSelect={(cr) => {
+                    setSelectedCr(cr);
+                    setSelectedCtasks(null);
+                  }}
                 />
-                <ChangeRequestDetail changeRequest={selectedCr} />
+                <ChangeRequestDetail
+                  key={crNumber(selectedCr)}
+                  changeRequest={selectedCr}
+                  initialCtasks={selectedCtasks}
+                />
               </>
             )}
           </>
