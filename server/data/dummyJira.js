@@ -1,0 +1,148 @@
+export const BOARD_COLUMNS = ['To Do', 'In Progress', 'In Review', 'Done'];
+
+export const dummyJiraTickets = [
+  {
+    key: 'SWA-101',
+    summary: 'Update baggage fee display on mobile check-in',
+    description:
+      'Passengers see outdated baggage fee tiers during mobile check-in. Align pricing with 2025 policy and show carry-on vs checked bag breakdown.',
+    type: 'Story',
+    priority: 'High',
+    status: 'To Do',
+    assignee: 'Maria Chen',
+    epic: 'Digital Experience',
+    labels: ['mobile', 'revenue', 'check-in'],
+    storyPoints: 5,
+    acceptanceCriteria: [
+      'Fees match published 2025 rate card',
+      'A/B test flag for rollout in DAL hub first',
+      'Analytics event fires on fee acknowledgment',
+    ],
+  },
+  {
+    key: 'SWA-102',
+    summary: 'Crew roster API timeout during peak schedule publish',
+    description:
+      'Operations reports intermittent 504 errors when publishing weekly crew rosters. Affects DAL and PHX bases between 06:00–08:00 CT.',
+    type: 'Bug',
+    priority: 'Critical',
+    status: 'In Progress',
+    assignee: 'James Okonkwo',
+    epic: 'Crew Operations',
+    labels: ['api', 'performance', 'crew'],
+    storyPoints: 8,
+    acceptanceCriteria: [
+      'p95 latency under 2s for roster publish',
+      'No 504s in load test simulating peak publish',
+      'Runbook updated for on-call',
+    ],
+  },
+  {
+    key: 'SWA-103',
+    summary: 'Rapid Rewards tier benefit messaging on confirmation email',
+    description:
+      'Marketing wants tier-specific benefit callouts (A-List, Companion Pass) in booking confirmation emails for domestic itineraries.',
+    type: 'Story',
+    priority: 'Medium',
+    status: 'In Review',
+    assignee: 'Priya Sharma',
+    epic: 'Loyalty',
+    labels: ['email', 'loyalty', 'marketing'],
+    storyPoints: 3,
+    acceptanceCriteria: [
+      'Correct tier detected from member profile',
+      'Fallback copy for non-members',
+      'Legal disclaimer included',
+    ],
+  },
+  {
+    key: 'SWA-104',
+    summary: 'Gate display integration for revised boarding groups',
+    description:
+      'Airport gate monitors must reflect new Family Boarding group between A and B. Coordinate with airport systems vendor.',
+    type: 'Task',
+    priority: 'High',
+    status: 'In Progress',
+    assignee: 'Alex Rivera',
+    epic: 'Airport Operations',
+    labels: ['gates', 'boarding', 'airport'],
+    storyPoints: 5,
+    acceptanceCriteria: [
+      'All SWA-owned gate displays show new group order',
+      'Vendor sign-off for top 10 stations',
+      'Rollback plan documented',
+    ],
+  },
+  {
+    key: 'SWA-105',
+    summary: 'Fuel hedging report export to finance data lake',
+    description:
+      'Finance needs daily CSV export of hedging positions into Snowflake staging for regulatory reporting.',
+    type: 'Story',
+    priority: 'Low',
+    status: 'Done',
+    assignee: 'Taylor Brooks',
+    epic: 'Finance Systems',
+    labels: ['etl', 'finance', 'reporting'],
+    storyPoints: 2,
+    acceptanceCriteria: [
+      'Daily job completes before 05:00 CT',
+      'Reconciliation checksum validated',
+      'PII not included in export',
+    ],
+  },
+  {
+    key: 'SWA-106',
+    summary: 'Wi-Fi portal captive login for international routes',
+    description:
+      'Enable satellite Wi-Fi captive portal with localized terms for Mexico and Caribbean routes.',
+    type: 'Story',
+    priority: 'Medium',
+    status: 'To Do',
+    assignee: 'Unassigned',
+    epic: 'Inflight Experience',
+    labels: ['wifi', 'international', 'compliance'],
+    storyPoints: 8,
+    acceptanceCriteria: [
+      'Terms available in EN and ES',
+      'Session timeout matches policy',
+      'Support dashboard shows active sessions',
+    ],
+  },
+  {
+    key: 'SWA-107',
+    summary: 'Aircraft turnaround checklist digitization at BWI',
+    description:
+      'Replace paper turnaround checklist with tablet app for ground crew at BWI pilot station.',
+    type: 'Epic',
+    priority: 'Medium',
+    status: 'In Review',
+    assignee: 'Jordan Lee',
+    epic: 'Ground Operations',
+    labels: ['tablet', 'bwi', 'operations'],
+    storyPoints: 13,
+    acceptanceCriteria: [
+      '100% checklist completion logged digitally',
+      'Offline mode for 30 minutes',
+      'Supervisor approval workflow',
+    ],
+  },
+  {
+    key: 'SWA-108',
+    summary: 'Weather delay push notification throttling',
+    description:
+      'Reduce duplicate push notifications during IRROPS. Batch updates per reservation every 15 minutes max.',
+    type: 'Bug',
+    priority: 'High',
+    status: 'Done',
+    assignee: 'Sam Patel',
+    epic: 'Customer Notifications',
+    labels: ['push', 'irrops', 'notifications'],
+    storyPoints: 3,
+    acceptanceCriteria: [
+      'Max one push per 15 min per PNR during delay',
+      'Critical gate change still immediate',
+      'Metrics dashboard shows throttle rate',
+    ],
+  },
+];
