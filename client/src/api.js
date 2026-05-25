@@ -12,6 +12,14 @@ export async function fetchChangeRequests() {
   return res.json();
 }
 
+export async function fetchChangeRequest(changeNumber) {
+  const res = await fetch(
+    `${API}/change-requests/${encodeURIComponent(changeNumber)}`
+  );
+  if (!res.ok) throw new Error('Failed to load change request');
+  return res.json();
+}
+
 export async function generateChangeRequest(jiraKey) {
   const res = await fetch(`${API}/change-requests/generate`, {
     method: 'POST',
@@ -33,6 +41,14 @@ export async function fetchChangeTasks(changeNumber) {
     `${API}/change-requests/${encodeURIComponent(changeNumber)}/ctasks`
   );
   if (!res.ok) throw new Error('Failed to load change tasks');
+  return res.json();
+}
+
+export async function fetchChangeTask(changeNumber, ctaskNumber) {
+  const res = await fetch(
+    `${API}/change-requests/${encodeURIComponent(changeNumber)}/ctasks/${encodeURIComponent(ctaskNumber)}`
+  );
+  if (!res.ok) throw new Error('Failed to load change task');
   return res.json();
 }
 

@@ -494,6 +494,53 @@ button {
   color: var(--muted);
 }
 
+.page-toolbar {
+  margin-bottom: 1rem;
+}
+
+.back-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--swa-blue);
+  text-decoration: none;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+  color: var(--swa-blue-dark);
+}
+
+.tabs a.tab {
+  text-decoration: none;
+  display: inline-block;
+}
+
+.ctask-content-sections {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.ctask-content-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--swa-blue-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.ctask-notes-empty {
+  color: var(--muted);
+  font-style: italic;
+}
+
 .cr-subtabs-wrap {
   margin-top: 1.5rem;
   padding-top: 1.25rem;

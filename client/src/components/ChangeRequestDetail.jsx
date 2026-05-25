@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { fetchChangeTasks } from '../api';
 import ChangeRequestTabs from './ChangeRequestTabs';
 import ChangeTasksTable from './ChangeTasksTable';
@@ -8,11 +9,16 @@ function stateClass(state) {
   return `state-pill state-${key}`;
 }
 
-export default function ChangeRequestDetail({ changeRequest, initialCtasks }) {
+export default function ChangeRequestDetail({
+  changeRequest,
+  initialCtasks,
+  changeNumber,
+}) {
+  const navigate = useNavigate();
   const [ctasks, setCtasks] = useState(initialCtasks || []);
   const [ctasksLoading, setCtasksLoading] = useState(false);
 
-  const num = changeRequest?.number || changeRequest?.crId;
+  const num = changeNumber || changeRequest?.number || changeRequest?.crId;
 
   useEffect(() => {
     if (!num) {
@@ -91,7 +97,14 @@ export default function ChangeRequestDetail({ changeRequest, initialCtasks }) {
 
       <section className="ctask-section">
         <h4 className="ctask-section-heading">Change tasks (CTASK)</h4>
-        <ChangeTasksTable ctasks={ctasks} loading={ctasksLoading} />
+        <ChangeTasksTable
+          ctasks={ctasks}
+          loading={ctasksLoading}
+          selectedTaskNumber={null}
+          onSelect={(task) =>
+            navigate(`/changes/${num}/tasks/${task.number}`)
+          }
+        />
       </section>
     </div>
   );
