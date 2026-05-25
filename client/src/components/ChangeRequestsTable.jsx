@@ -13,8 +13,8 @@ export default function ChangeRequestsTable({
       <div className="empty-state">
         <p>No change requests yet.</p>
         <p style={{ fontSize: '0.9rem' }}>
-          Go to the Jira board, select a ticket, and click &quot;Generate change
-          request (AI)&quot; to create a draft.
+          Change requests are created when Jira automation sends a webhook to the
+          API.
         </p>
       </div>
     );

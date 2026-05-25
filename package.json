@@ -10,7 +10,6 @@
     "build": "npm install --prefix client && npm run build --prefix client && npm install --prefix server",
     "start": "npm start --prefix server",
     "dev": "concurrently \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-    "seed": "npm run seed --prefix server",
     "start:server": "npm start --prefix server",
     "start:client": "npm run dev --prefix client"
   },

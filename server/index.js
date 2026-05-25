@@ -4,11 +4,8 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import jiraRoutes from './routes/jira.js';
 import changeRequestRoutes from './routes/changeRequests.js';
 import webhookRoutes from './routes/webhooks.js';
-import JiraTicket from './models/JiraTicket.js';
-import { dummyJiraTickets } from './data/dummyJira.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 5001;
@@ -40,17 +37,8 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-app.use('/api/jira', jiraRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/change-requests', changeRequestRoutes);
-
-async function ensureSeed() {
-  const count = await JiraTicket.countDocuments();
-  if (count === 0) {
-    await JiraTicket.insertMany(dummyJiraTickets);
-    console.log(`Seeded ${dummyJiraTickets.length} Jira tickets.`);
-  }
-}
 
 function serveClient() {
   app.use(express.static(clientDist));
@@ -66,10 +54,6 @@ async function start() {
   try {
     await mongoose.connect(MONGODB_URI);
     console.log('Connected to MongoDB');
-
-    if (process.env.SEED_ON_START === 'true') {
-      await ensureSeed();
-    }
 
     if (isProduction) {
       serveClient();

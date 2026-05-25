@@ -1,5 +1,8 @@
 import { Router } from 'express';
-import { upsertJiraTicketFromWebhook } from '../utils/jiraWebhook.js';
+import {
+  buildTicketFromWebhook,
+  parseWebhookBody,
+} from '../utils/webhookPayload.js';
 import { createChangeRequestFromTicket } from '../services/changeRequestService.js';
 
 const router = Router();
@@ -18,25 +21,12 @@ function verifyWebhookSecret(req, res, next) {
 
 /**
  * POST /api/webhooks/jira
- * Body: { ticketKey, summary, description, statusName, requestedBy, requestedByEmail, ... }
- * Upserts Jira ticket in MongoDB, then creates CHG + CTASKs (same as board generate).
+ * Lambda/Jira Automation → create CHG + CTASKs immediately (no Jira board storage).
  */
 router.post('/jira', verifyWebhookSecret, async (req, res) => {
   try {
-    const { ticket, parsed, boardStatus } =
-      await upsertJiraTicketFromWebhook(req.body);
-
-    const result = {
-      ok: true,
-      jiraKey: ticket.key,
-      ticket,
-      boardStatus,
-      message: `Jira ticket ${ticket.key} saved to MongoDB`,
-    };
-
-    if (!parsed.generateChangeRequest) {
-      return res.status(200).json(result);
-    }
+    const parsed = parseWebhookBody(req.body);
+    const ticket = buildTicketFromWebhook(req.body);
 
     const crResult = await createChangeRequestFromTicket(ticket, {
       requestedBy: parsed.requestedBy || undefined,
@@ -45,7 +35,8 @@ router.post('/jira', verifyWebhookSecret, async (req, res) => {
 
     if (crResult.existing) {
       return res.status(409).json({
-        ...result,
+        ok: true,
+        jiraKey: parsed.ticketKey,
         error: 'Change request already exists for this ticket',
         changeRequest: crResult.changeRequest,
         ctasks: crResult.ctasks,
@@ -53,11 +44,12 @@ router.post('/jira', verifyWebhookSecret, async (req, res) => {
     }
 
     return res.status(201).json({
-      ...result,
+      ok: true,
+      jiraKey: parsed.ticketKey,
       changeRequest: crResult.changeRequest,
       ctasks: crResult.ctasks,
       aiSource: crResult.aiSource,
-      message: `Created ${crResult.changeRequest.number} for ${ticket.key}`,
+      message: `Created ${crResult.changeRequest.number} for ${parsed.ticketKey}`,
     });
   } catch (err) {
     const status = err.message?.includes('required') ? 400 : 500;

@@ -21,7 +21,5 @@ services:
         value: gemini-2.0-flash
       - key: USE_MOCK_AI
         value: "false"
-      - key: SEED_ON_START
-        value: "true"
       - key: JIRA_WEBHOOK_SECRET
         sync: false

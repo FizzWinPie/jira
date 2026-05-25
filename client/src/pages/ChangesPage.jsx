@@ -60,7 +60,7 @@ export default function ChangesPage() {
         onSelect={(cr) => navigate(`/changes/${crNumber(cr)}`)}
       />
       <p className="cr-table-hint">
-        Select a change request to view details and tasks.
+        New change requests appear here after Jira automation triggers the webhook.
       </p>
     </>
   );

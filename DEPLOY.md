@@ -1,6 +1,6 @@
 # Deploy to Render
 
-Single **Web Service** serves the React UI and Express API from one URL (good for Jira Automation webhooks).
+Single **Web Service** serves the React UI and Express API from one URL (for Jira Automation / Lambda webhooks).
 
 ## Prerequisites
 
@@ -15,29 +15,22 @@ Single **Web Service** serves the React UI and Express API from one URL (good fo
 3. Set **Environment** variables when prompted:
    - `MONGODB_URI` — Atlas connection string (e.g. `mongodb+srv://user:pass@cluster.mongodb.net/swa-change-requests`)
    - `GEMINI_API_KEY` — optional  
-   - `JIRA_WEBHOOK_SECRET` — optional, for future webhooks  
+   - `JIRA_WEBHOOK_SECRET` — optional; require matching `X-Webhook-Secret` header  
 4. Deploy.  
 
 ## npm or Yarn?
 
-**Use npm.** This repo has `package-lock.json` files and all scripts use `npm` (`npm run build`, `npm start`). Do not use Yarn on Render unless you add a `yarn.lock` and change every script.
-
-Render picks npm automatically when it sees `package-lock.json` (no extra setting required).
+**Use npm.** This repo has `package-lock.json` files and all scripts use `npm`. Render picks npm when it sees `package-lock.json`.
 
 ## Option B — Manual Web Service
-
-In Render dashboard → your service → **Settings**:
 
 | Setting | Value |
 |--------|--------|
 | **Language / Runtime** | Node |
-| **Root Directory** | *(leave blank — repo root)* |
+| **Root Directory** | *(repo root)* |
 | **Build Command** | `npm run build` |
 | **Start Command** | `npm start` |
 | **Health Check Path** | `/api/health` |
-| **Auto-Deploy** | On (optional) |
-
-**Do not set** a custom install command unless builds fail; default `npm install` at root is enough for `concurrently` in devDependencies. The `build` script installs `client` and `server` via `npm install --prefix`.
 
 ### Environment variables
 
@@ -45,9 +38,9 @@ In Render dashboard → your service → **Settings**:
 |-----|----------|--------|
 | `MONGODB_URI` | Yes | Atlas URI with database name |
 | `NODE_ENV` | Yes | `production` |
-| `SEED_ON_START` | Recommended | `true` seeds demo Jira tickets if DB is empty |
 | `GEMINI_API_KEY` | No | Omit or set `USE_MOCK_AI=true` for mock AI |
 | `USE_MOCK_AI` | No | `true` forces mock even with API key |
+| `JIRA_WEBHOOK_SECRET` | No | If set, webhook must send `X-Webhook-Secret` |
 | `PORT` | Auto | Set by Render — do not override |
 
 ## MongoDB Atlas
@@ -60,8 +53,7 @@ In Render dashboard → your service → **Settings**:
 ## Verify
 
 - `https://YOUR-SERVICE.onrender.com/api/health` → `{ "ok": true }`  
-- `https://YOUR-SERVICE.onrender.com/` → React app  
-- **Change Requests** tab loads after seed  
+- `https://YOUR-SERVICE.onrender.com/` → Change Requests UI (empty until webhooks create data)
 
 ## Jira webhook (Lambda or Automation)
 
@@ -80,17 +72,32 @@ In Render dashboard → your service → **Settings**:
 }
 ```
 
-Also accepts `jiraKey`, `title` (alias for summary). Set `generateChangeRequest: false` to only upsert the ticket without creating a CHG.
+Also accepts `jiraKey`, `title` (alias for summary).
+
+**Responses:**
+
+- `201` — New CHG + CTASKs created  
+- `409` — CHG already exists for this `ticketKey` (idempotent; returns existing CHG)  
+- `400` — Missing required fields  
+- `401` — Wrong/missing webhook secret (if `JIRA_WEBHOOK_SECRET` is set)
 
 Optional header: `X-Webhook-Secret` (must match `JIRA_WEBHOOK_SECRET` on Render).
 
-**Legacy:** `POST /api/change-requests/generate` with `{ "jiraKey": "SWA-101" }` still works for tickets already in MongoDB.
+**Test:**
+
+```bash
+curl -X POST https://YOUR-SERVICE.onrender.com/api/webhooks/jira \
+  -H "Content-Type: application/json" \
+  -d '{"ticketKey":"SCRUM-99","summary":"Test","description":"Body","statusName":"Ready for CHG","requestedBy":"Test User"}'
+```
+
+Use a **new** `ticketKey` each time you expect `201`.
 
 ## Local production test
 
 ```bash
 npm run build
-cd server && NODE_ENV=production SEED_ON_START=true MONGODB_URI="your-atlas-uri" npm start
+cd server && NODE_ENV=production MONGODB_URI="your-atlas-uri" npm start
 ```
 
 Open http://localhost:5001

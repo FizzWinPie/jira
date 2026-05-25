@@ -8,7 +8,7 @@ import {
 import { createCtasksForChange } from '../utils/ctaskDefaults.js';
 
 /**
- * Create CHG + CTASKs from a MongoDB Jira ticket (board, /generate, or webhook).
+ * Create CHG + CTASKs from in-memory Jira ticket context (webhook/Lambda).
  */
 export async function createChangeRequestFromTicket(ticket, options = {}) {
   const jiraKey = ticket.key;

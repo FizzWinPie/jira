@@ -1,81 +1,78 @@
-# Southwest Airlines — Jira & AI Change Requests (MERN)
+# Southwest Airlines — Change Management Portal (MERN)
 
-A basic MERN demo app that shows a **Jira-style board** with Southwest Airlines dummy stories and uses **AI** to draft **change requests** from ticket details.
+MERN app that creates **change requests (CHG)** and **change tasks (CTASK)** when **Jira automation** (Lambda) posts to the webhook. The UI lists and details change requests only — no in-app Jira board.
 
 ## Features
 
-- **Jira Board tab** — Kanban columns (To Do, In Progress, In Review, Done) with 8 SWA-themed tickets
-- **Change Requests tab** — ServiceNow-style table: Number (`CHG123456`), change type, state, environment (QA/PROD), owning group, owner, planned dates, and AI draft
-- **AI integration** — `POST /api/change-requests/generate` builds a CAB-ready draft from the selected Jira ticket
-  - With `GEMINI_API_KEY`: uses Google Gemini
-  - Without API key: uses built-in mock drafts (same flow, no external calls)
+- **Change requests** — ServiceNow-style table and detail: `CHG123456`, planning fields, environment, dates, owner
+- **Change tasks** — Three CTASKs per CHG (Pre-Implementation, Implementation, Validation)
+- **Webhook** — `POST /api/webhooks/jira` creates CHG + CTASKs from Jira ticket payload (AI planning via Gemini or mock)
+- **AI** — With `GEMINI_API_KEY`: Google Gemini; without: built-in mock drafts
 
 ## Stack
 
-- **MongoDB** + Mongoose
-- **Express** API
-- **React** (Vite) frontend
-- **Node.js** ESM
+- MongoDB + Mongoose
+- Express API
+- React (Vite) frontend
+- Node.js ESM
 
 ## Deploy on Render
 
-See **[DEPLOY.md](./DEPLOY.md)** for MongoDB Atlas, `render.yaml` Blueprint, and environment variables. Use **npm** on Render (`npm run build` / `npm start`). One URL serves the UI and API (`/api/health` for health checks).
+See **[DEPLOY.md](./DEPLOY.md)** for MongoDB Atlas, `render.yaml`, and environment variables.
 
 ## Quick start
 
 ### Prerequisites
 
 - Node.js 18+
-- MongoDB running locally (`mongod`) or a `MONGODB_URI` in `.env`
+- MongoDB locally or `MONGODB_URI` in `server/.env`
 
 ### Setup
 
 ```bash
 cd /Users/xhonisuli/Desktop/jira
-cp .env.example server/.env   # optional: add GEMINI_API_KEY
+cp server/.env.example server/.env   # optional: GEMINI_API_KEY, MONGODB_URI
 npm install
 npm run install:all
-npm run seed --prefix server    # optional; server auto-seeds on first start
 ```
 
 ### Run
 
-Terminal 1 — API:
-
 ```bash
-npm run start:server
+npm run dev
 ```
 
-Terminal 2 — UI:
-
-```bash
-npm run start:client
-```
-
-Or both with `npm run dev` after installing `concurrently` at the root.
-
-Open **http://localhost:5173**
+- API: http://localhost:5001  
+- UI: http://localhost:5173  
 
 ## Usage
 
-1. Open the **Jira Board** tab and click a ticket card.
-2. Click **Generate change request (AI)** in the detail panel.
-3. Switch to **Change Requests** to see the new row and read the AI draft.
-
-Each Jira key can only have one change request (duplicate generation returns the existing CR).
-
-**After schema updates:** drop old change requests in MongoDB (`db.changerequests.drop()`) or delete documents that still use `crId` instead of `number`.
+1. Configure Jira Automation / Lambda to `POST` your app URL (see DEPLOY.md).
+2. Open **Change Requests** in the app to see new CHGs after a webhook fires.
+3. Each Jira `ticketKey` maps to one CHG; repeat webhooks return **409** with the existing record.
 
 ## API
 
 | Method | Path | Description |
 |--------|------|-------------|
 | GET | `/api/health` | Health + AI mode |
-| GET | `/api/jira/board` | Board columns + tickets |
-| GET | `/api/change-requests` | List all CRs |
-| POST | `/api/webhooks/jira` | Upsert Jira ticket + create CHG/CTASKs (Lambda/Automation) |
-| POST | `/api/change-requests/generate` | Body: `{ "jiraKey": "SWA-101" }` (ticket must exist in DB) |
+| POST | `/api/webhooks/jira` | Create CHG + CTASKs from Jira payload |
+| GET | `/api/change-requests` | List change requests |
+| GET | `/api/change-requests/:number` | Change request detail |
+| GET | `/api/change-requests/:number/ctasks` | List CTASKs for a CHG |
+| GET | `/api/change-requests/:number/ctasks/:ctaskNumber` | CTASK detail |
 
-## Dummy data
+## Webhook body (example)
 
-Tickets cover SWA domains: mobile check-in, crew roster API, Rapid Rewards email, gate displays, fuel hedging export, Wi-Fi portal, turnaround checklist, and IRROPS notifications.
+```json
+{
+  "ticketKey": "SCRUM-1",
+  "summary": "Issue title",
+  "description": "Full description",
+  "statusName": "Ready for CHG",
+  "requestedBy": "Display Name",
+  "requestedByEmail": "user@example.com"
+}
+```
+
+Aliases: `jiraKey`, `title` (for `summary`).
