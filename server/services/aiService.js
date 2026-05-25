@@ -1,4 +1,10 @@
 import { GoogleGenAI } from '@google/genai';
+import {
+  buildChangeMetadata,
+  inferChangeType,
+  inferEnvironment,
+  pickOwningGroup,
+} from '../utils/changeRequestDefaults.js';
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
@@ -7,9 +13,9 @@ Given a Jira ticket, produce a structured change request draft suitable for CAB 
 Respond ONLY with valid JSON (no markdown fences) using this exact shape:
 {
   "title": "string - concise change title",
-  "priority": "Low|Medium|High|Critical",
-  "environment": "Development|Staging|Production",
-  "riskLevel": "Low|Medium|High",
+  "changeType": "Normal|Standard|Informational|Emergency",
+  "environment": "QA|PROD",
+  "owningGroup": "one of: adfs_dev, cds_dev, southwest.com, oqs support, network_ops, crew_systems",
   "draft": "string - 2-4 paragraph narrative: business context, technical change, impact, testing",
   "implementationPlan": "string - numbered steps",
   "rollbackPlan": "string - numbered rollback steps"
@@ -54,44 +60,66 @@ function extractJson(text) {
   }
 }
 
+function isQuotaError(err) {
+  const msg = err?.message || String(err);
+  return msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota');
+}
+
 function mockDraft(ticket) {
-  const env =
-    ticket.labels?.includes('finance') || ticket.priority === 'Critical'
-      ? 'Production'
-      : 'Staging';
+  const env = inferEnvironment(ticket);
+  const changeType = inferChangeType(ticket);
+  const owningGroup = pickOwningGroup(ticket);
   return {
-    title: `CR: ${ticket.summary}`,
-    priority: ticket.priority === 'Critical' ? 'High' : ticket.priority,
+    title: ticket.summary,
+    changeType,
     environment: env,
-    riskLevel: ticket.priority === 'Critical' ? 'High' : 'Medium',
-    draft: `## Change Request for ${ticket.key}\n\n**Business context:** ${ticket.summary}\n\n${ticket.description}\n\nThis change supports the ${ticket.epic || 'Operations'} initiative at Southwest Airlines. Impacted areas include systems tagged: ${(ticket.labels || []).join(', ') || 'general'}.\n\n**Technical scope:** Implementation will follow SWA change windows (Tue–Thu, 22:00–04:00 CT for Production). Validation will cover acceptance criteria from the Jira story.\n\n**Customer & ops impact:** Minimal expected disruption; communications plan to be coordinated with Operations Control if customer-facing.`,
-    implementationPlan: `1. Review and approve change request in ServiceNow\n2. Deploy to ${env} during approved window\n3. Execute smoke tests per acceptance criteria\n4. Monitor for 2 hours post-change\n5. Close CR with evidence attached`,
-    rollbackPlan: `1. Stop deployment pipeline if in progress\n2. Revert to previous release artifact\n3. Restore configuration from last known good backup\n4. Validate rollback via automated health checks\n5. Notify CAB and ticket assignee (${ticket.assignee})`,
+    owningGroup,
+    draft: `Change Request — ${ticket.key}\n\nBusiness context\n${ticket.summary}\n\n${ticket.description}\n\nThis change supports the ${ticket.epic || 'Operations'} program. Systems impacted: ${(ticket.labels || []).join(', ') || 'general'}.\n\nTechnical scope\nImplementation follows SWA change windows. Environment: ${env}. Owning group: ${owningGroup}. Validation against Jira acceptance criteria before PROD promotion.\n\nImpact\nOperations and customer impact assessed as low-to-medium unless IRROPS or customer-facing channels are involved.`,
+    implementationPlan: `1. CAB review and approval\n2. Deploy to ${env} in approved window\n3. Execute smoke and regression tests\n4. Monitor for 2 hours post-change\n5. Update state to Completed and attach evidence`,
+    rollbackPlan: `1. Halt pipeline if deployment in progress\n2. Revert to previous release/build\n3. Restore last known good configuration\n4. Run automated health checks\n5. Notify owning group and ${ticket.assignee || 'change owner'}`,
   };
 }
 
 export async function generateChangeRequestDraft(ticket) {
+  const useMock = process.env.USE_MOCK_AI === 'true';
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) {
+
+  if (useMock || !apiKey) {
     return { ...mockDraft(ticket), source: 'mock' };
   }
 
-  const ai = new GoogleGenAI({ apiKey });
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL,
-    contents: `Jira ticket:\n${buildTicketContext(ticket)}`,
-    config: {
-      systemInstruction: SYSTEM_PROMPT,
-      temperature: 0.4,
-      maxOutputTokens: 2048,
-    },
-  });
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: `Jira ticket:\n${buildTicketContext(ticket)}`,
+      config: {
+        systemInstruction: SYSTEM_PROMPT,
+        temperature: 0.4,
+        maxOutputTokens: 2048,
+      },
+    });
 
-  const content =
-    response?.text ?? response?.candidates?.[0]?.content?.parts?.[0]?.text;
-  const parsed = extractJson(content);
-  if (!parsed?.draft) {
-    return { ...mockDraft(ticket), source: 'mock-fallback' };
+    const content =
+      response?.text ?? response?.candidates?.[0]?.content?.parts?.[0]?.text;
+    const parsed = extractJson(content);
+    if (!parsed?.draft) {
+      return { ...mockDraft(ticket), source: 'mock-fallback' };
+    }
+    const meta = buildChangeMetadata(ticket);
+    return {
+      ...parsed,
+      changeType: parsed.changeType || meta.changeType,
+      environment: ['QA', 'PROD'].includes(parsed.environment)
+        ? parsed.environment
+        : meta.environment,
+      owningGroup: parsed.owningGroup || meta.owningGroup,
+      source: 'gemini',
+    };
+  } catch (err) {
+    if (isQuotaError(err)) {
+      return { ...mockDraft(ticket), source: 'mock-quota' };
+    }
+    throw err;
   }
-  return { ...parsed, source: 'gemini' };
 }

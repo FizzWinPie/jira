@@ -333,9 +333,153 @@ button {
   background: var(--swa-yellow-light);
 }
 
-.status-draft {
-  color: #6b4e00;
+.cr-title-cell {
+  max-width: 220px;
+}
+
+.mono-cell {
+  font-size: 0.8rem;
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  white-space: nowrap;
+}
+
+.state-pill {
+  display: inline-block;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
   font-weight: 600;
+}
+
+.state-in-progress {
+  background: #e3edff;
+  color: var(--swa-blue);
+}
+
+.state-open {
+  background: #e8f5ee;
+  color: var(--success);
+}
+
+.state-completed,
+.state-closed {
+  background: #eef0f4;
+  color: var(--muted);
+}
+
+.state-cancelled {
+  background: #fde8ec;
+  color: var(--danger);
+}
+
+.env-pill {
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+
+.env-prod {
+  color: var(--danger);
+}
+
+.env-qa {
+  color: var(--swa-blue);
+}
+
+.cr-meta-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: 0.5rem 1rem;
+  margin: 0 0 1.25rem;
+  font-size: 0.9rem;
+}
+
+.cr-meta-grid dt {
+  margin: 0;
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cr-meta-grid dd {
+  margin: 0;
+}
+
+.cr-table-clickable tbody tr {
+  cursor: pointer;
+}
+
+.cr-table-hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.cr-detail-panel {
+  margin-top: 1.5rem;
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 1.5rem 1.75rem;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+
+.cr-detail-heading {
+  margin: 0 0 1.25rem;
+  font-size: 1.1rem;
+  color: var(--swa-blue-dark);
+  padding-bottom: 0.75rem;
+  border-bottom: 2px solid var(--swa-yellow);
+}
+
+.cr-detail-grid {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.cr-detail-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 1rem;
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--border);
+  align-items: baseline;
+}
+
+.cr-detail-row:last-child {
+  border-bottom: none;
+}
+
+.cr-detail-row dt {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cr-detail-row dd {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.cr-detail-extra {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px dashed var(--border);
+}
+
+.cr-detail-extra-label {
+  margin: 0 0 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .link-btn {

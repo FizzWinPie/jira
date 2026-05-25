@@ -1,19 +1,44 @@
 import mongoose from 'mongoose';
 
+const STATES = ['Closed', 'Cancelled', 'Open', 'In Progress', 'Completed'];
+const CHANGE_TYPES = ['Normal', 'Standard', 'Informational', 'Emergency'];
+const ENVIRONMENTS = ['QA', 'PROD'];
+const SOURCES_OF_CHANGE = ['Jira', 'ServiceNow', 'Manual', 'Monitoring', 'Incident'];
+
 const changeRequestSchema = new mongoose.Schema(
   {
-    crId: { type: String, required: true, unique: true },
+    number: { type: String, required: true, unique: true },
     jiraKey: { type: String, required: true },
     title: { type: String, required: true },
-    status: {
+    shortDescription: { type: String, required: true },
+    requestedBy: { type: String, required: true },
+    sourceOfChange: {
       type: String,
-      enum: ['Draft', 'Pending Approval', 'Approved', 'Rejected'],
-      default: 'Draft',
+      enum: SOURCES_OF_CHANGE,
+      default: 'Jira',
     },
-    priority: { type: String, default: 'Medium' },
-    environment: { type: String, default: 'Production' },
-    riskLevel: { type: String, default: 'Medium' },
-    requestedBy: { type: String, default: 'AI Change Agent' },
+    primaryBusinessService: { type: String, required: true },
+    maintenanceWindow: { type: String, required: true },
+    location: { type: String, required: true },
+    changeType: {
+      type: String,
+      enum: CHANGE_TYPES,
+      default: 'Normal',
+    },
+    state: {
+      type: String,
+      enum: STATES,
+      default: 'In Progress',
+    },
+    environment: {
+      type: String,
+      enum: ENVIRONMENTS,
+      default: 'QA',
+    },
+    owningGroup: { type: String, required: true },
+    changeOwner: { type: String, required: true },
+    plannedStartDate: { type: String, required: true },
+    plannedEndDate: { type: String, required: true },
     draft: { type: String, required: true },
     implementationPlan: { type: String, default: '' },
     rollbackPlan: { type: String, default: '' },

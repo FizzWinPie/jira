@@ -7,6 +7,7 @@ import {
 } from './api';
 import JiraBoard from './components/JiraBoard';
 import ChangeRequestsTable from './components/ChangeRequestsTable';
+import ChangeRequestDetail from './components/ChangeRequestDetail';
 
 const TABS = [
   { id: 'board', label: 'Jira Board' },
@@ -49,6 +50,8 @@ export default function App() {
     load();
   }, [load]);
 
+  const crNumber = (cr) => cr?.number || cr?.crId;
+
   const handleGenerate = async (jiraKey) => {
     setGenerating(true);
     setMessage(null);
@@ -57,9 +60,15 @@ export default function App() {
       setChangeRequests((prev) => [changeRequest, ...prev]);
       setSelectedCr(changeRequest);
       setTab('changes');
+      const sourceLabel =
+        aiSource === 'gemini'
+          ? 'Gemini'
+          : aiSource === 'mock-quota'
+            ? 'mock (quota exceeded)'
+            : 'mock';
       setMessage({
         type: 'success',
-        text: `Created ${changeRequest.crId} using ${aiSource === 'gemini' ? 'Gemini' : 'mock'} AI draft.`,
+        text: `Created ${crNumber(changeRequest)} using ${sourceLabel} AI draft.`,
       });
     } catch (err) {
       if (err.status === 409 && err.data?.changeRequest) {
@@ -67,7 +76,7 @@ export default function App() {
         setTab('changes');
         setMessage({
           type: 'info',
-          text: `Change request already exists: ${err.data.changeRequest.crId}`,
+          text: `Change request already exists: ${crNumber(err.data.changeRequest)}`,
         });
       } else {
         setMessage({ type: 'error', text: err.message });
@@ -127,7 +136,7 @@ export default function App() {
 
             {tab === 'changes' && (
               <>
-                {message && tab === 'changes' && (
+                {message && (
                   <div
                     className={`alert ${
                       message.type === 'error'
@@ -142,38 +151,10 @@ export default function App() {
                 )}
                 <ChangeRequestsTable
                   changeRequests={changeRequests}
-                  selectedCrId={selectedCr?.crId}
+                  selectedNumber={crNumber(selectedCr)}
                   onSelect={(cr) => setSelectedCr(cr)}
                 />
-                {selectedCr && (
-                  <div className="draft-view">
-                    <h3>
-                      {selectedCr.crId} — {selectedCr.title}
-                    </h3>
-                    <div className="ticket-meta" style={{ marginBottom: '1rem' }}>
-                      <span className="pill pill-type">Jira: {selectedCr.jiraKey}</span>
-                      <span className="pill pill-type">{selectedCr.status}</span>
-                      <span className={priorityClass(selectedCr.priority)}>
-                        {selectedCr.priority}
-                      </span>
-                      <span className="pill pill-type">{selectedCr.environment}</span>
-                      <span className="pill pill-type">Risk: {selectedCr.riskLevel}</span>
-                    </div>
-                    <div className="draft-body">{selectedCr.draft}</div>
-                    {selectedCr.implementationPlan && (
-                      <div className="draft-section">
-                        <h4>Implementation plan</h4>
-                        <div className="draft-body">{selectedCr.implementationPlan}</div>
-                      </div>
-                    )}
-                    {selectedCr.rollbackPlan && (
-                      <div className="draft-section">
-                        <h4>Rollback plan</h4>
-                        <div className="draft-body">{selectedCr.rollbackPlan}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                <ChangeRequestDetail changeRequest={selectedCr} />
               </>
             )}
           </>
@@ -181,8 +162,4 @@ export default function App() {
       </main>
     </>
   );
-}
-
-function priorityClass(priority) {
-  return `pill pill-priority-${(priority || 'medium').toLowerCase()}`;
 }

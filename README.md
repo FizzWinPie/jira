@@ -5,7 +5,7 @@ A basic MERN demo app that shows a **Jira-style board** with Southwest Airlines 
 ## Features
 
 - **Jira Board tab** — Kanban columns (To Do, In Progress, In Review, Done) with 8 SWA-themed tickets
-- **Change Requests tab** — Table of generated CRs with full draft, implementation plan, and rollback plan
+- **Change Requests tab** — ServiceNow-style table: Number (`CHG123456`), change type, state, environment (QA/PROD), owning group, owner, planned dates, and AI draft
 - **AI integration** — `POST /api/change-requests/generate` builds a CAB-ready draft from the selected Jira ticket
   - With `GEMINI_API_KEY`: uses Google Gemini
   - Without API key: uses built-in mock drafts (same flow, no external calls)
@@ -59,6 +59,8 @@ Open **http://localhost:5173**
 3. Switch to **Change Requests** to see the new row and read the AI draft.
 
 Each Jira key can only have one change request (duplicate generation returns the existing CR).
+
+**After schema updates:** drop old change requests in MongoDB (`db.changerequests.drop()`) or delete documents that still use `crId` instead of `number`.
 
 ## API
 

@@ -2,13 +2,12 @@ import { Router } from 'express';
 import ChangeRequest from '../models/ChangeRequest.js';
 import JiraTicket from '../models/JiraTicket.js';
 import { generateChangeRequestDraft } from '../services/aiService.js';
+import {
+  buildChangeMetadata,
+  nextChangeNumber,
+} from '../utils/changeRequestDefaults.js';
 
 const router = Router();
-
-async function nextCrId() {
-  const count = await ChangeRequest.countDocuments();
-  return `CR-SWA-${String(count + 1).padStart(4, '0')}`;
-}
 
 router.get('/', async (_req, res) => {
   try {
@@ -19,9 +18,11 @@ router.get('/', async (_req, res) => {
   }
 });
 
-router.get('/:crId', async (req, res) => {
+router.get('/:number', async (req, res) => {
   try {
-    const cr = await ChangeRequest.findOne({ crId: req.params.crId });
+    const cr = await ChangeRequest.findOne({
+      number: req.params.number.toUpperCase(),
+    });
     if (!cr) return res.status(404).json({ error: 'Change request not found' });
     res.json(cr);
   } catch (err) {
@@ -50,16 +51,26 @@ router.post('/generate', async (req, res) => {
     }
 
     const aiResult = await generateChangeRequestDraft(ticket);
-    const crId = await nextCrId();
+    const metadata = buildChangeMetadata(ticket);
+    const number = await nextChangeNumber(ChangeRequest);
 
     const changeRequest = await ChangeRequest.create({
-      crId,
+      number,
       jiraKey: ticket.key,
-      title: aiResult.title || `CR: ${ticket.summary}`,
-      status: 'Draft',
-      priority: aiResult.priority || ticket.priority,
-      environment: aiResult.environment || 'Staging',
-      riskLevel: aiResult.riskLevel || 'Medium',
+      title: aiResult.title || ticket.summary,
+      shortDescription: metadata.shortDescription,
+      requestedBy: metadata.requestedBy,
+      sourceOfChange: metadata.sourceOfChange,
+      primaryBusinessService: metadata.primaryBusinessService,
+      maintenanceWindow: metadata.maintenanceWindow,
+      location: metadata.location,
+      changeType: aiResult.changeType || metadata.changeType,
+      state: metadata.state,
+      environment: aiResult.environment || metadata.environment,
+      owningGroup: aiResult.owningGroup || metadata.owningGroup,
+      changeOwner: metadata.changeOwner,
+      plannedStartDate: metadata.plannedStartDate,
+      plannedEndDate: metadata.plannedEndDate,
       draft: aiResult.draft,
       implementationPlan: aiResult.implementationPlan || '',
       rollbackPlan: aiResult.rollbackPlan || '',
@@ -75,16 +86,32 @@ router.post('/generate', async (req, res) => {
   }
 });
 
-router.patch('/:crId', async (req, res) => {
+router.patch('/:number', async (req, res) => {
   try {
-    const allowed = ['status', 'draft', 'title', 'priority', 'environment', 'riskLevel'];
+    const allowed = [
+      'state',
+      'draft',
+      'title',
+      'shortDescription',
+      'requestedBy',
+      'sourceOfChange',
+      'primaryBusinessService',
+      'maintenanceWindow',
+      'location',
+      'changeType',
+      'environment',
+      'owningGroup',
+      'changeOwner',
+      'plannedStartDate',
+      'plannedEndDate',
+    ];
     const updates = {};
     for (const field of allowed) {
       if (req.body[field] !== undefined) updates[field] = req.body[field];
     }
 
     const cr = await ChangeRequest.findOneAndUpdate(
-      { crId: req.params.crId },
+      { number: req.params.number.toUpperCase() },
       updates,
       { new: true }
     );
