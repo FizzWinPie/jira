@@ -467,19 +467,119 @@ button {
   font-size: 0.95rem;
 }
 
-.cr-detail-extra {
+.cr-subtabs-wrap {
   margin-top: 1.5rem;
   padding-top: 1.25rem;
-  border-top: 1px dashed var(--border);
+  border-top: 1px solid var(--border);
 }
 
-.cr-detail-extra-label {
-  margin: 0 0 1rem;
+.cr-subtabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 0;
+}
+
+.cr-subtab {
+  background: none;
+  border: none;
+  padding: 0.6rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--muted);
+  border-bottom: 3px solid transparent;
+  margin-bottom: -2px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.cr-subtab:hover {
+  color: var(--swa-blue);
+}
+
+.cr-subtab.active {
+  color: var(--swa-blue);
+  border-bottom-color: var(--swa-yellow);
+}
+
+.cr-subtab-panel {
+  padding: 1.25rem 0 0.5rem;
+  min-height: 120px;
+}
+
+.cr-tab-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-style: italic;
+  padding: 1rem 0;
+}
+
+.cr-tab-planning {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.cr-tab-field-label {
+  margin: 0 0 0.5rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--swa-blue-dark);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.cr-tab-field-body {
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--text);
+  padding: 0.75rem 1rem;
+  background: #fafbfd;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.cr-schedule-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 0;
+}
+
+.cr-tab-field-inline {
+  display: contents;
+}
+
+.cr-tab-field-inline dt {
+  margin: 0;
+  padding: 0.65rem 0;
   font-size: 0.8rem;
   font-weight: 600;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
+  border-bottom: 1px solid var(--border);
+}
+
+.cr-tab-field-inline dd {
+  margin: 0;
+  padding: 0.65rem 0;
+  font-size: 0.9rem;
+  border-bottom: 1px solid var(--border);
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+}
+
+.cr-tab-field-inline dd.has-value {
+  color: var(--text);
+  font-weight: 500;
+}
+
+.cr-tab-field-inline dd.empty-value {
+  color: #b0b5c4;
+  font-style: italic;
+  font-family: inherit;
 }
 
 .link-btn {

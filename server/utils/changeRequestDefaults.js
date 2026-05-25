@@ -203,3 +203,47 @@ export function buildChangeMetadata(ticket) {
     plannedEndDate,
   };
 }
+
+function ensureNonEmpty(value, fallback) {
+  const t = typeof value === 'string' ? value.trim() : '';
+  return t.length > 0 ? value.trim() : fallback;
+}
+
+export function buildPlanningContent(ticket, aiResult = {}) {
+  const env = inferEnvironment(ticket);
+  const group = pickOwningGroup(ticket);
+
+  const fallbackDescription = `Detailed description — ${ticket.key}\n\n${ticket.summary}\n\n${ticket.description}`;
+  const fallbackJustification = `Reason for change — ${ticket.key}\n\n${ticket.summary}\n\nBusiness driver: ${ticket.epic || 'Operations'}. Priority: ${ticket.priority}.`;
+  const fallbackImplementation = `1. CAB approval for ${ticket.key}\n2. Deploy to ${env} (${group})\n3. Validate and close change`;
+  const criteria = (ticket.acceptanceCriteria || [])
+    .map((c, i) => `${i + 1}. ${c}`)
+    .join('\n');
+  const fallbackValidation = criteria
+    ? `Validation — ${ticket.key}:\n${criteria}`
+    : `1. Smoke tests in ${env}\n2. Monitor 2 hours post-change`;
+  const fallbackBackout = `1. Revert deployment for ${ticket.key}\n2. Restore last known good state\n3. Notify ${group}`;
+
+  return {
+    detailedDescription: ensureNonEmpty(
+      aiResult.draft || aiResult.detailedDescription,
+      fallbackDescription
+    ),
+    businessJustification: ensureNonEmpty(
+      aiResult.businessJustification,
+      fallbackJustification
+    ),
+    implementationPlan: ensureNonEmpty(
+      aiResult.implementationPlan,
+      fallbackImplementation
+    ),
+    changeValidationPlan: ensureNonEmpty(
+      aiResult.changeValidationPlan,
+      fallbackValidation
+    ),
+    remediationBackoutPlan: ensureNonEmpty(
+      aiResult.rollbackPlan || aiResult.remediationBackoutPlan,
+      fallbackBackout
+    ),
+  };
+}

@@ -1,3 +1,5 @@
+import ChangeRequestTabs from './ChangeRequestTabs';
+
 function stateClass(state) {
   const key = (state || 'in progress').toLowerCase().replace(/\s+/g, '-');
   return `state-pill state-${key}`;
@@ -51,31 +53,7 @@ export default function ChangeRequestDetail({ changeRequest }) {
         ))}
       </dl>
 
-      {(changeRequest.draft ||
-        changeRequest.implementationPlan ||
-        changeRequest.rollbackPlan) && (
-        <div className="cr-detail-extra">
-          <p className="cr-detail-extra-label">AI-generated documentation</p>
-          {changeRequest.draft && (
-            <div className="draft-section">
-              <h4>Full description</h4>
-              <div className="draft-body">{changeRequest.draft}</div>
-            </div>
-          )}
-          {changeRequest.implementationPlan && (
-            <div className="draft-section">
-              <h4>Implementation plan</h4>
-              <div className="draft-body">{changeRequest.implementationPlan}</div>
-            </div>
-          )}
-          {changeRequest.rollbackPlan && (
-            <div className="draft-section">
-              <h4>Rollback plan</h4>
-              <div className="draft-body">{changeRequest.rollbackPlan}</div>
-            </div>
-          )}
-        </div>
-      )}
+      <ChangeRequestTabs changeRequest={changeRequest} />
     </div>
   );
 }

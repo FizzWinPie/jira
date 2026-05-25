@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import {
   buildChangeMetadata,
+  buildPlanningContent,
   inferChangeType,
   inferEnvironment,
   pickOwningGroup,
@@ -9,19 +10,22 @@ import {
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-2.0-flash';
 
 const SYSTEM_PROMPT = `You are an IT Change Management assistant for Southwest Airlines (SWA).
-Given a Jira ticket, produce a structured change request draft suitable for CAB review.
+Given a Jira ticket, produce change request planning content for CAB review.
 Respond ONLY with valid JSON (no markdown fences) using this exact shape:
 {
   "title": "string - concise change title",
   "changeType": "Normal|Standard|Informational|Emergency",
   "environment": "QA|PROD",
   "owningGroup": "one of: adfs_dev, cds_dev, southwest.com, oqs support, network_ops, crew_systems",
-  "draft": "string - 2-4 paragraph narrative: business context, technical change, impact, testing",
-  "implementationPlan": "string - numbered steps",
-  "rollbackPlan": "string - numbered rollback steps"
+  "planning": {
+    "detailedDescription": "string - multi-paragraph technical and business detail from the Jira ticket",
+    "businessJustification": "string - reason for change with business drivers and stakeholders",
+    "implementationPlan": "string - numbered implementation steps",
+    "changeValidationPlan": "string - numbered validation and test steps tied to acceptance criteria",
+    "remediationBackoutPlan": "string - numbered rollback/remediation steps"
+  }
 }
-Use Southwest Airlines terminology (stations, IRROPS, Rapid Rewards, crew, gates).
-Be specific to the ticket; do not invent systems not implied by the ticket.`;
+Every planning field MUST be non-empty, specific to the Jira ticket, and use SWA terminology (stations, IRROPS, Rapid Rewards, crew, gates).`;
 
 function buildTicketContext(ticket) {
   return JSON.stringify(
@@ -65,27 +69,60 @@ function isQuotaError(err) {
   return msg.includes('429') || msg.includes('RESOURCE_EXHAUSTED') || msg.includes('quota');
 }
 
-function mockDraft(ticket) {
-  const env = inferEnvironment(ticket);
-  const changeType = inferChangeType(ticket);
-  const owningGroup = pickOwningGroup(ticket);
+/** Map legacy flat AI keys into planning shape */
+function normalizeAiPayload(parsed) {
+  const p = parsed.planning || {};
   return {
-    title: ticket.summary,
-    changeType,
-    environment: env,
-    owningGroup,
-    draft: `Change Request — ${ticket.key}\n\nBusiness context\n${ticket.summary}\n\n${ticket.description}\n\nThis change supports the ${ticket.epic || 'Operations'} program. Systems impacted: ${(ticket.labels || []).join(', ') || 'general'}.\n\nTechnical scope\nImplementation follows SWA change windows. Environment: ${env}. Owning group: ${owningGroup}. Validation against Jira acceptance criteria before PROD promotion.\n\nImpact\nOperations and customer impact assessed as low-to-medium unless IRROPS or customer-facing channels are involved.`,
-    implementationPlan: `1. CAB review and approval\n2. Deploy to ${env} in approved window\n3. Execute smoke and regression tests\n4. Monitor for 2 hours post-change\n5. Update state to Completed and attach evidence`,
-    rollbackPlan: `1. Halt pipeline if deployment in progress\n2. Revert to previous release/build\n3. Restore last known good configuration\n4. Run automated health checks\n5. Notify owning group and ${ticket.assignee || 'change owner'}`,
+    draft: p.detailedDescription || parsed.draft || parsed.detailedDescription,
+    businessJustification: p.businessJustification || parsed.businessJustification,
+    implementationPlan: p.implementationPlan || parsed.implementationPlan,
+    changeValidationPlan: p.changeValidationPlan || parsed.changeValidationPlan,
+    rollbackPlan:
+      p.remediationBackoutPlan || parsed.rollbackPlan || parsed.remediationBackoutPlan,
   };
 }
 
-export async function generateChangeRequestDraft(ticket) {
+function mockAiPayload(ticket) {
+  const env = inferEnvironment(ticket);
+  const owningGroup = pickOwningGroup(ticket);
+  return {
+    draft: `Detailed description — ${ticket.key}\n\n${ticket.summary}\n\n${ticket.description}\n\nEpic: ${ticket.epic || 'N/A'}. Type: ${ticket.type}. Priority: ${ticket.priority}.\n\nTechnical scope: Change will be implemented by ${owningGroup} in the ${env} environment during an approved SWA maintenance window. Work is traced to Jira ${ticket.key} and must satisfy all acceptance criteria before production promotion.\n\nSystems and labels: ${(ticket.labels || []).join(', ') || 'general application stack'}.`,
+    businessJustification: `Reason for change — ${ticket.key}\n\nBusiness need: ${ticket.summary}\n\n${ticket.description}\n\nThis change supports the ${ticket.epic || 'Operations'} initiative. Priority ${ticket.priority} reflects operational/business urgency. Success is measured by completing Jira acceptance criteria with minimal customer and crew impact.`,
+    implementationPlan: `1. Review ${ticket.key} requirements with ${ticket.assignee || 'change owner'}\n2. Obtain CAB approval for ${env} deployment\n3. Execute pre-change checklist for ${owningGroup}\n4. Deploy during approved maintenance window\n5. Run post-deploy validation\n6. Update change state to Completed`,
+    changeValidationPlan:
+      (ticket.acceptanceCriteria || []).length > 0
+        ? `Validation for ${ticket.key}:\n${(ticket.acceptanceCriteria || []).map((c, i) => `${i + 1}. ${c}`).join('\n')}\n\nAdditional checks: smoke tests, monitoring for 2 hours, confirm no IRROPS regression.`
+        : `1. Smoke test core flows in ${env}\n2. Verify monitoring dashboards green for 2 hours\n3. Confirm rollback artifact available\n4. Document results in change record`,
+    rollbackPlan: `1. Stop in-progress deployment for ${ticket.key}\n2. Revert to previous known-good build/config\n3. Validate service health in ${env}\n4. Notify ${owningGroup} and ${ticket.assignee || 'change owner'}\n5. Open problem record if customer impact detected`,
+  };
+}
+
+function buildResult(ticket, parsed, source) {
+  const meta = buildChangeMetadata(ticket);
+  const aiFields = normalizeAiPayload(parsed);
+  const planning = buildPlanningContent(ticket, aiFields);
+
+  return {
+    title: parsed.title || ticket.summary,
+    changeType: parsed.changeType || meta.changeType,
+    environment: ['QA', 'PROD'].includes(parsed.environment)
+      ? parsed.environment
+      : meta.environment,
+    owningGroup: parsed.owningGroup || meta.owningGroup,
+    planning,
+    source,
+  };
+}
+
+/**
+ * Generate all planning fields from Jira via AI (Gemini) or Jira-aware mock.
+ */
+export async function generatePlanningFromJira(ticket) {
   const useMock = process.env.USE_MOCK_AI === 'true';
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (useMock || !apiKey) {
-    return { ...mockDraft(ticket), source: 'mock' };
+    return buildResult(ticket, { ...mockAiPayload(ticket) }, 'mock');
   }
 
   try {
@@ -96,30 +133,31 @@ export async function generateChangeRequestDraft(ticket) {
       config: {
         systemInstruction: SYSTEM_PROMPT,
         temperature: 0.4,
-        maxOutputTokens: 2048,
+        maxOutputTokens: 3072,
       },
     });
 
     const content =
       response?.text ?? response?.candidates?.[0]?.content?.parts?.[0]?.text;
     const parsed = extractJson(content);
-    if (!parsed?.draft) {
-      return { ...mockDraft(ticket), source: 'mock-fallback' };
+    const planning = parsed?.planning || parsed;
+    const hasPlanning =
+      planning?.detailedDescription ||
+      parsed?.draft ||
+      planning?.implementationPlan;
+
+    if (!hasPlanning) {
+      return buildResult(ticket, mockAiPayload(ticket), 'mock-fallback');
     }
-    const meta = buildChangeMetadata(ticket);
-    return {
-      ...parsed,
-      changeType: parsed.changeType || meta.changeType,
-      environment: ['QA', 'PROD'].includes(parsed.environment)
-        ? parsed.environment
-        : meta.environment,
-      owningGroup: parsed.owningGroup || meta.owningGroup,
-      source: 'gemini',
-    };
+
+    return buildResult(ticket, parsed, 'gemini');
   } catch (err) {
     if (isQuotaError(err)) {
-      return { ...mockDraft(ticket), source: 'mock-quota' };
+      return buildResult(ticket, mockAiPayload(ticket), 'mock-quota');
     }
     throw err;
   }
 }
+
+/** @deprecated alias */
+export const generateChangeRequestDraft = generatePlanningFromJira;

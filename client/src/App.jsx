@@ -68,7 +68,7 @@ export default function App() {
             : 'mock';
       setMessage({
         type: 'success',
-        text: `Created ${crNumber(changeRequest)} using ${sourceLabel} AI draft.`,
+        text: `Created ${crNumber(changeRequest)} with ${sourceLabel} planning from Jira.`,
       });
     } catch (err) {
       if (err.status === 409 && err.data?.changeRequest) {

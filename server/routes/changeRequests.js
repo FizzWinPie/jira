@@ -1,11 +1,8 @@
 import { Router } from 'express';
 import ChangeRequest from '../models/ChangeRequest.js';
 import JiraTicket from '../models/JiraTicket.js';
-import { generateChangeRequestDraft } from '../services/aiService.js';
-import {
-  buildChangeMetadata,
-  nextChangeNumber,
-} from '../utils/changeRequestDefaults.js';
+import { generatePlanningFromJira } from '../services/aiService.js';
+import { buildChangeMetadata, nextChangeNumber } from '../utils/changeRequestDefaults.js';
 
 const router = Router();
 
@@ -50,7 +47,7 @@ router.post('/generate', async (req, res) => {
       });
     }
 
-    const aiResult = await generateChangeRequestDraft(ticket);
+    const aiResult = await generatePlanningFromJira(ticket);
     const metadata = buildChangeMetadata(ticket);
     const number = await nextChangeNumber(ChangeRequest);
 
@@ -71,9 +68,11 @@ router.post('/generate', async (req, res) => {
       changeOwner: metadata.changeOwner,
       plannedStartDate: metadata.plannedStartDate,
       plannedEndDate: metadata.plannedEndDate,
-      draft: aiResult.draft,
-      implementationPlan: aiResult.implementationPlan || '',
-      rollbackPlan: aiResult.rollbackPlan || '',
+      planning: aiResult.planning,
+      notes: '',
+      pir: '',
+      processIntegration: '',
+      governance: '',
       aiGenerated: true,
     });
 
@@ -90,8 +89,8 @@ router.patch('/:number', async (req, res) => {
   try {
     const allowed = [
       'state',
-      'draft',
       'title',
+      'planning',
       'shortDescription',
       'requestedBy',
       'sourceOfChange',
@@ -104,6 +103,10 @@ router.patch('/:number', async (req, res) => {
       'changeOwner',
       'plannedStartDate',
       'plannedEndDate',
+      'notes',
+      'pir',
+      'processIntegration',
+      'governance',
     ];
     const updates = {};
     for (const field of allowed) {
