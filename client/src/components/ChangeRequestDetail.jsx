@@ -52,22 +52,21 @@ export default function ChangeRequestDetail({
 
   const rows = [
     { label: 'Number', value: num },
-    { label: 'Requested by', value: changeRequest.requestedBy },
-    { label: 'Source of change', value: changeRequest.sourceOfChange },
-    {
-      label: 'Primary business service',
-      value: changeRequest.primaryBusinessService,
-    },
     { label: 'Maintenance window', value: changeRequest.maintenanceWindow },
-    { label: 'Location', value: changeRequest.location },
+    { label: 'Requested by', value: changeRequest.requestedBy },
     {
       label: 'Short description',
       value: changeRequest.shortDescription || changeRequest.title,
     },
+    { label: 'Source of change', value: changeRequest.sourceOfChange },
     {
       label: 'State',
       value: changeRequest.state || changeRequest.status || 'In Progress',
       render: (v) => <span className={stateClass(v)}>{v}</span>,
+    },
+    {
+      label: 'Primary business service',
+      value: changeRequest.primaryBusinessService,
     },
     {
       label: 'Environment',
@@ -76,36 +75,47 @@ export default function ChangeRequestDetail({
         <span className={`env-pill env-${(v || '').toLowerCase()}`}>{v || '—'}</span>
       ),
     },
+    { label: 'Location', value: changeRequest.location },
     { label: 'Change type', value: changeRequest.changeType },
+    {
+      label: 'Implementation awareness',
+      value: changeRequest.implementationAwareness,
+    },
     { label: 'Change owning group', value: changeRequest.owningGroup },
+    { label: 'PCI risk', value: changeRequest.pciRisk },
     { label: 'Change owner', value: changeRequest.changeOwner },
   ];
 
   return (
-    <div className="cr-detail-panel">
-      <h3 className="cr-detail-heading">Change request — {num}</h3>
-      <dl className="cr-detail-grid">
-        {rows.map(({ label, value, render }) => (
-          <div key={label} className="cr-detail-row">
-            <dt>{label}</dt>
-            <dd>{render ? render(value) : value || '—'}</dd>
-          </div>
-        ))}
-      </dl>
+    <div className="cr-detail-stack">
+      <div className="cr-detail-meta">
+        <dl className="cr-detail-grid">
+          {rows.map(({ label, value, render }) => (
+            <div key={label} className="cr-detail-row">
+              <dt>{label}</dt>
+              <dd>{render ? render(value) : value || '—'}</dd>
+            </div>
+          ))}
+        </dl>
+      </div>
 
-      <ChangeRequestTabs changeRequest={changeRequest} />
+      <div className="cr-detail-section">
+        <ChangeRequestTabs changeRequest={changeRequest} />
+      </div>
 
-      <section className="ctask-section">
-        <h4 className="ctask-section-heading">Change tasks (CTASK)</h4>
-        <ChangeTasksTable
-          ctasks={ctasks}
-          loading={ctasksLoading}
-          selectedTaskNumber={null}
-          onSelect={(task) =>
-            navigate(`/changes/${num}/tasks/${task.number}`)
-          }
-        />
-      </section>
+      <div className="cr-detail-section">
+        <section className="ctask-section">
+          <h4 className="ctask-section-heading">Change tasks (CTASK)</h4>
+          <ChangeTasksTable
+            ctasks={ctasks}
+            loading={ctasksLoading}
+            selectedTaskNumber={null}
+            onSelect={(task) =>
+              navigate(`/changes/${num}/tasks/${task.number}`)
+            }
+          />
+        </section>
+      </div>
     </div>
   );
 }

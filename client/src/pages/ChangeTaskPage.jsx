@@ -38,27 +38,30 @@ export default function ChangeTaskPage() {
     };
   }, [chg, ctask]);
 
-  if (loading) return <p className="loading">Loading change task…</p>;
+  if (loading) {
+    return (
+      <div className="page-inset">
+        <p className="loading">Loading change task…</p>
+      </div>
+    );
+  }
 
   if (error || !task) {
     return (
-      <div className="empty-state">
-        <p>{error || `Change task ${ctask} not found.`}</p>
-        <Link to={`/changes/${chg}`} className="back-link">
-          ← Back to {chg}
-        </Link>
+      <div className="page-inset">
+        <div className="empty-state">
+          <p>{error || `Change task ${ctask} not found.`}</p>
+          <Link to={`/changes/${chg}`} className="back-link">
+            ← Back to {chg}
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="page-toolbar">
-        <Link to={`/changes/${chg}`} className="back-link">
-          ← Back to change request {chg}
-        </Link>
-      </div>
+    <div className="page-inset">
       <ChangeTaskDetail task={task} />
-    </>
+    </div>
   );
 }

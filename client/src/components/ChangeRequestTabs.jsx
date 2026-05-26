@@ -25,9 +25,9 @@ function resolvePlanning(cr) {
 function PlanningField({ label, value }) {
   const text = value?.trim() ? value : 'Generating from Jira…';
   return (
-    <div className="cr-tab-field">
-      <h4 className="cr-tab-field-label">{label}</h4>
-      <div className="cr-tab-field-body">{text}</div>
+    <div className="cr-field-row">
+      <span className="cr-field-label">{label}</span>
+      <div className="cr-field-value-box">{text}</div>
     </div>
   );
 }
@@ -35,17 +35,15 @@ function PlanningField({ label, value }) {
 function ScheduleField({ label, value }) {
   const hasValue = value && String(value).trim() !== '';
   return (
-    <div className="cr-tab-field cr-tab-field-inline">
-      <dt>{label}</dt>
-      <dd className={hasValue ? 'has-value' : 'empty-value'}>
+    <div className="cr-field-row">
+      <span className="cr-field-label">{label}</span>
+      <div
+        className={`cr-field-value-box${hasValue ? '' : ' cr-field-value-empty'}`}
+      >
         {hasValue ? value : '—'}
-      </dd>
+      </div>
     </div>
   );
-}
-
-function EmptyTab({ message }) {
-  return <p className="cr-tab-empty">{message}</p>;
 }
 
 export default function ChangeRequestTabs({ changeRequest }) {
@@ -69,7 +67,12 @@ export default function ChangeRequestTabs({ changeRequest }) {
 
       <div className="cr-subtab-panel">
         {activeTab === 'notes' && (
-          <EmptyTab message="No notes have been added to this change request." />
+          <div className="cr-field-row">
+            <span className="cr-field-label">Notes</span>
+            <div className="cr-field-value-box cr-field-value-empty">
+              No notes have been added to this change request.
+            </div>
+          </div>
         )}
 
         {activeTab === 'planning' && (
@@ -98,7 +101,7 @@ export default function ChangeRequestTabs({ changeRequest }) {
         )}
 
         {activeTab === 'schedule' && (
-          <dl className="cr-schedule-grid">
+          <div className="cr-tab-planning">
             <ScheduleField
               label="Planned start date"
               value={changeRequest.plannedStartDate}
@@ -113,19 +116,34 @@ export default function ChangeRequestTabs({ changeRequest }) {
             <ScheduleField label="Actual end date" value="" />
             <ScheduleField label="Implementation state start" value="" />
             <ScheduleField label="Implementation state end" value="" />
-          </dl>
+          </div>
         )}
 
         {activeTab === 'pir' && (
-          <EmptyTab message="Post-implementation review (PIR) has not been documented." />
+          <div className="cr-field-row">
+            <span className="cr-field-label">PIR</span>
+            <div className="cr-field-value-box cr-field-value-empty">
+              Post-implementation review (PIR) has not been documented.
+            </div>
+          </div>
         )}
 
         {activeTab === 'process' && (
-          <EmptyTab message="No process integration records for this change." />
+          <div className="cr-field-row">
+            <span className="cr-field-label">Process integration</span>
+            <div className="cr-field-value-box cr-field-value-empty">
+              No process integration records for this change.
+            </div>
+          </div>
         )}
 
         {activeTab === 'governance' && (
-          <EmptyTab message="No governance items recorded for this change." />
+          <div className="cr-field-row">
+            <span className="cr-field-label">Governance</span>
+            <div className="cr-field-value-box cr-field-value-empty">
+              No governance items recorded for this change.
+            </div>
+          </div>
         )}
       </div>
     </div>

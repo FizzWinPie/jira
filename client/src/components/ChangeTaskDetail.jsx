@@ -7,6 +7,23 @@ function empty(value) {
   return value && String(value).trim() !== '' ? value : '—';
 }
 
+function isEmpty(value) {
+  return !value || String(value).trim() === '' || value === '—';
+}
+
+function ContentField({ label, value, emptyMessage }) {
+  const text = value?.trim() ? value : emptyMessage || '—';
+  const empty = !value?.trim();
+  return (
+    <div className="cr-field-row">
+      <span className="cr-field-label">{label}</span>
+      <div className={`cr-field-value-box${empty ? ' cr-field-value-empty' : ''}`}>
+        {text}
+      </div>
+    </div>
+  );
+}
+
 export default function ChangeTaskDetail({ task }) {
   if (!task) return null;
 
@@ -35,38 +52,44 @@ export default function ChangeTaskDetail({ task }) {
   ];
 
   return (
-    <div className="cr-detail-panel">
-      <h3 className="cr-detail-heading">Change task — {task.number}</h3>
+    <div className="cr-detail-stack">
+      <div className="cr-detail-meta">
+        <dl className="cr-detail-grid">
+          {headerRows.map(({ label, value, render, mono }) => (
+            <div key={label} className="cr-detail-row">
+              <dt>{label}</dt>
+              <dd
+                className={[
+                  isEmpty(value) && !render ? 'cr-field-value-empty' : '',
+                  mono ? 'mono-cell' : '',
+                ]
+                  .filter(Boolean)
+                  .join(' ') || undefined}
+              >
+                {render ? render(value) : value || '—'}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
 
-      <dl className="cr-detail-grid">
-        {headerRows.map(({ label, value, render, mono }) => (
-          <div key={label} className="cr-detail-row">
-            <dt>{label}</dt>
-            <dd className={mono ? 'mono-cell' : undefined}>
-              {render ? render(value) : value || '—'}
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <div className="cr-detail-section">
+        <div className="cr-tab-planning">
+          <ContentField label="Short description" value={task.shortDescription} />
+          <ContentField
+            label="Detailed description"
+            value={task.detailedDescription}
+          />
+        </div>
+      </div>
 
-      <div className="ctask-content-sections">
-        <div className="ctask-content-block">
-          <h4 className="ctask-content-label">Short description</h4>
-          <div className="cr-tab-field-body">{task.shortDescription || '—'}</div>
-        </div>
-        <div className="ctask-content-block">
-          <h4 className="ctask-content-label">Detailed description</h4>
-          <div className="cr-tab-field-body">
-            {task.detailedDescription || '—'}
-          </div>
-        </div>
-        <div className="ctask-content-block">
-          <h4 className="ctask-content-label">Work notes</h4>
-          <div className="cr-tab-field-body ctask-notes-empty">
-            {task.workNotes?.trim()
-              ? task.workNotes
-              : 'No work notes have been added.'}
-          </div>
+      <div className="cr-detail-section">
+        <div className="cr-tab-planning">
+          <ContentField
+            label="Work notes"
+            value={task.workNotes}
+            emptyMessage="No work notes have been added."
+          />
         </div>
       </div>
     </div>

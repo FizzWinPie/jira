@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { fetchChangeRequest, fetchChangeRequests } from '../api';
+import { fetchChangeRequest } from '../api';
 import ChangeRequestDetail from '../components/ChangeRequestDetail';
-import ChangeRequestsTable from '../components/ChangeRequestsTable';
 
 export default function ChangeRequestPage() {
   const { chgNumber } = useParams();
@@ -10,7 +9,6 @@ export default function ChangeRequestPage() {
   const location = useLocation();
   const [initialCtasks] = useState(() => location.state?.ctasks ?? null);
   const [message, setMessage] = useState(() => location.state?.message ?? null);
-  const [changeRequests, setChangeRequests] = useState([]);
   const [changeRequest, setChangeRequest] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -18,11 +16,7 @@ export default function ChangeRequestPage() {
     if (!chgNumber) return;
     setLoading(true);
     try {
-      const [crs, cr] = await Promise.all([
-        fetchChangeRequests(),
-        fetchChangeRequest(chgNumber.toUpperCase()),
-      ]);
-      setChangeRequests(crs);
+      const cr = await fetchChangeRequest(chgNumber.toUpperCase());
       setChangeRequest(cr);
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
@@ -42,30 +36,31 @@ export default function ChangeRequestPage() {
     }
   }, [location.pathname, location.state, navigate]);
 
-  const crNumber = (cr) => cr?.number || cr?.crId;
   const num = chgNumber?.toUpperCase();
 
-  if (loading) return <p className="loading">Loading…</p>;
+  if (loading) {
+    return (
+      <div className="page-inset">
+        <p className="loading">Loading…</p>
+      </div>
+    );
+  }
 
   if (!changeRequest) {
     return (
-      <div className="empty-state">
-        <p>Change request {num} not found.</p>
-        <Link to="/changes" className="back-link">
-          ← Back to change requests
-        </Link>
+      <div className="page-inset">
+        <div className="empty-state">
+          <p>Change request {num} not found.</p>
+          <Link to="/changes" className="back-link">
+            ← Back to change requests
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <>
-      <div className="page-toolbar">
-        <Link to="/changes" className="back-link">
-          ← All change requests
-        </Link>
-      </div>
-
+    <div className="page-inset">
       {message && (
         <div
           className={`alert ${
@@ -80,18 +75,12 @@ export default function ChangeRequestPage() {
         </div>
       )}
 
-      <ChangeRequestsTable
-        changeRequests={changeRequests}
-        selectedNumber={num}
-        onSelect={(cr) => navigate(`/changes/${crNumber(cr)}`)}
-      />
-
       <ChangeRequestDetail
         key={num}
         changeRequest={changeRequest}
         initialCtasks={initialCtasks}
         changeNumber={num}
       />
-    </>
+    </div>
   );
 }

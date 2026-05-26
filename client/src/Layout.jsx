@@ -1,4 +1,4 @@
-import { Outlet } from 'react-router-dom';
+import { Link, Outlet, useParams } from 'react-router-dom';
 import iconUrl from './assets/icon.png';
 
 function IconMenu() {
@@ -42,6 +42,13 @@ function IconMessages() {
 }
 
 export default function Layout() {
+  const { chgNumber, ctaskNumber } = useParams();
+  const chg = chgNumber?.toUpperCase();
+  const ctask = ctaskNumber?.toUpperCase();
+  const onList = !chgNumber;
+  const backTo = ctask ? `/changes/${chg}` : chg ? '/changes' : null;
+  const recordId = ctask || chg;
+
   return (
     <>
       <header className="app-header flex flex-col">
@@ -68,10 +75,24 @@ export default function Layout() {
           >
             <IconMessages />
           </button>
-          <span className="app-header-module">Change Requests</span>
-          <label className="app-header-search">
-            <input type="search" placeholder="Search" aria-label="Search" />
-          </label>
+          <div className="app-header-module-row">
+            {backTo && (
+              <Link to={backTo} className="app-header-back" aria-label="Back">
+                ←
+              </Link>
+            )}
+            <span className="app-header-module">
+              Change Requests
+              {recordId && !onList && (
+                <span className="app-header-record-id">{recordId}</span>
+              )}
+            </span>
+          </div>
+          {onList && (
+            <label className="app-header-search">
+              <input type="search" placeholder="Search" aria-label="Search" />
+            </label>
+          )}
         </div>
       </header>
 
