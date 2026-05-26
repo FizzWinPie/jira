@@ -211,12 +211,94 @@ function ensureNonEmpty(value, fallback) {
   return t.length > 0 ? value.trim() : fallback;
 }
 
-export function buildPlanningContent(ticket, aiResult = {}) {
+/** AI-style: (1)–(7) on one line each; stop at end of (7) line */
+const RAISE_PAREN_BLOCK_RE =
+  /(?:^|\n)\s*\(1\)\s*Who RAISED the change\?[\s\S]*?\(7\)\s*What is the RELATIONSHIP between this change and other changes\?[^\n]*/gi;
+
+/** Server-style: 1.–7. with short answers on following lines */
+const RAISE_DOT_BLOCK_RE =
+  /^1\. Who RAISED the change\?[\s\S]*?^7\. What is the RELATIONSHIP between this change and other changes\?\n[^\n]+/gm;
+
+/** Seven RAISE questions with short answers — always leads reason for change. */
+export function buildRaiseJustification(ticket, options = {}) {
+  const env = inferEnvironment(ticket);
+  const group = pickOwningGroup(ticket);
+  const owner = pickChangeOwner(ticket);
+  const requestedBy = options.requestedBy?.trim() || pickRequestedBy(ticket);
+  const changeType = inferChangeType(ticket);
+
+  const reason = ticket.summary?.trim() || 'Deliver the approved Jira scope.';
+  const returnRequired =
+    (ticket.acceptanceCriteria || []).length > 0
+      ? `Meet acceptance criteria for ${ticket.key} with no customer or ops impact.`
+      : `Successful deploy and validation in ${env}.`;
+
+  let risks = 'Low — standard change in non-production or routine scope.';
+  if (ticket.priority === 'Critical' || changeType === 'Emergency') {
+    risks = 'High — customer/ops impact possible; emergency CAB and rollback required.';
+  } else if (env === 'PROD' || ticket.priority === 'High') {
+    risks = 'Medium — production or high priority; monitor closely and use backout plan.';
+  }
+
+  const resources = `${group}, ${env} environment, CAB window, deployment pipeline.`;
+  const responsible = `${owner} (${group}) for build, test, and implementation.`;
+
+  let relationship = `Standalone change from Jira ${ticket.key}; no linked CHG records.`;
+  if (ticket.epic) {
+    relationship = `Aligned to epic "${ticket.epic}"; coordinate timing with related initiative work.`;
+  }
+
+  return `1. Who RAISED the change?
+${requestedBy} (submitter for ${ticket.key}).
+
+2. What is the REASON for the change?
+${reason}
+
+3. What is the RETURN required from the change?
+${returnRequired}
+
+4. What are the RISKS involved in the change?
+${risks}
+
+5. What resources are REQUIRED to deliver this change?
+${resources}
+
+6. Who is RESPONSIBLE for build, test & implementation of the change?
+${responsible}
+
+7. What is the RELATIONSHIP between this change and other changes?
+${relationship}`;
+}
+
+/** Strip server- or AI-generated RAISE Q&A (formats: "1." or "(1)"). */
+export function stripRaiseJustificationFromBody(body) {
+  let text = (body || '').trim();
+  if (!text) return text;
+
+  let prev;
+  do {
+    prev = text;
+    text = text
+      .replace(RAISE_PAREN_BLOCK_RE, '')
+      .replace(RAISE_DOT_BLOCK_RE, '')
+      .trim();
+  } while (text !== prev);
+
+  return text.replace(/\n{3,}/g, '\n\n').trim();
+}
+
+export function prependRaiseJustification(ticket, body, options = {}) {
+  const raise = buildRaiseJustification(ticket, options);
+  const remainder = stripRaiseJustificationFromBody(body);
+  return remainder ? `${raise}\n\n${remainder}` : raise;
+}
+
+export function buildPlanningContent(ticket, aiResult = {}, options = {}) {
   const env = inferEnvironment(ticket);
   const group = pickOwningGroup(ticket);
 
   const fallbackDescription = `Detailed description — ${ticket.key}\n\n${ticket.summary}\n\n${ticket.description}`;
-  const fallbackJustification = `Reason for change — ${ticket.key}\n\n${ticket.summary}\n\nBusiness driver: ${ticket.epic || 'Operations'}. Priority: ${ticket.priority}.`;
+  const fallbackJustification = `Additional context — ${ticket.key}\n\nBusiness driver: ${ticket.epic || 'Operations'}. Priority: ${ticket.priority}. Owning group: ${group}.`;
   const fallbackImplementation = `1. CAB approval for ${ticket.key}\n2. Deploy to ${env} (${group})\n3. Validate and close change`;
   const criteria = (ticket.acceptanceCriteria || [])
     .map((c, i) => `${i + 1}. ${c}`)
@@ -231,9 +313,10 @@ export function buildPlanningContent(ticket, aiResult = {}) {
       aiResult.draft || aiResult.detailedDescription,
       fallbackDescription
     ),
-    businessJustification: ensureNonEmpty(
-      aiResult.businessJustification,
-      fallbackJustification
+    businessJustification: prependRaiseJustification(
+      ticket,
+      ensureNonEmpty(aiResult.businessJustification, fallbackJustification),
+      options
     ),
     implementationPlan: ensureNonEmpty(
       aiResult.implementationPlan,

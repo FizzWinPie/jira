@@ -26,7 +26,9 @@ export async function createChangeRequestFromTicket(ticket, options = {}) {
     };
   }
 
-  const aiResult = await generatePlanningFromJira(ticket);
+  const aiResult = await generatePlanningFromJira(ticket, {
+    requestedBy: options.requestedBy,
+  });
   const metadata = buildChangeMetadata(ticket, {
     requestedBy: options.requestedBy,
     sourceOfChange: options.sourceOfChange || 'Jira',

@@ -19,7 +19,7 @@ Respond ONLY with valid JSON (no markdown fences) using this exact shape:
   "owningGroup": "one of: adfs_dev, cds_dev, southwest.com, oqs support, network_ops, crew_systems",
   "planning": {
     "detailedDescription": "string - multi-paragraph technical and business detail from the Jira ticket",
-    "businessJustification": "string - reason for change with business drivers and stakeholders",
+    "businessJustification": "string - additional CAB narrative only (business drivers, stakeholders, impact). Do NOT include the seven RAISE questions (Who raised, Reason, Return, Risks, Resources, Responsible, Relationship); the system adds those automatically.",
     "implementationPlan": "string - numbered implementation steps",
     "changeValidationPlan": "string - numbered validation and test steps tied to acceptance criteria",
     "remediationBackoutPlan": "string - numbered rollback/remediation steps"
@@ -87,7 +87,7 @@ function mockAiPayload(ticket) {
   const owningGroup = pickOwningGroup(ticket);
   return {
     draft: `Detailed description — ${ticket.key}\n\n${ticket.summary}\n\n${ticket.description}\n\nEpic: ${ticket.epic || 'N/A'}. Type: ${ticket.type}. Priority: ${ticket.priority}.\n\nTechnical scope: Change will be implemented by ${owningGroup} in the ${env} environment during an approved SWA maintenance window. Work is traced to Jira ${ticket.key} and must satisfy all acceptance criteria before production promotion.\n\nSystems and labels: ${(ticket.labels || []).join(', ') || 'general application stack'}.`,
-    businessJustification: `Reason for change — ${ticket.key}\n\nBusiness need: ${ticket.summary}\n\n${ticket.description}\n\nThis change supports the ${ticket.epic || 'Operations'} initiative. Priority ${ticket.priority} reflects operational/business urgency. Success is measured by completing Jira acceptance criteria with minimal customer and crew impact.`,
+    businessJustification: `Additional context — ${ticket.key}\n\n${ticket.description}\n\nSupports ${ticket.epic || 'Operations'} at ${ticket.priority} priority.`,
     implementationPlan: `1. Review ${ticket.key} requirements with ${ticket.assignee || 'change owner'}\n2. Obtain CAB approval for ${env} deployment\n3. Execute pre-change checklist for ${owningGroup}\n4. Deploy during approved maintenance window\n5. Run post-deploy validation\n6. Update change state to Completed`,
     changeValidationPlan:
       (ticket.acceptanceCriteria || []).length > 0
@@ -97,10 +97,10 @@ function mockAiPayload(ticket) {
   };
 }
 
-function buildResult(ticket, parsed, source) {
+function buildResult(ticket, parsed, source, options = {}) {
   const meta = buildChangeMetadata(ticket);
   const aiFields = normalizeAiPayload(parsed);
-  const planning = buildPlanningContent(ticket, aiFields);
+  const planning = buildPlanningContent(ticket, aiFields, options);
 
   return {
     title: parsed.title || ticket.summary,
@@ -117,12 +117,12 @@ function buildResult(ticket, parsed, source) {
 /**
  * Generate all planning fields from Jira via AI (Gemini) or Jira-aware mock.
  */
-export async function generatePlanningFromJira(ticket) {
+export async function generatePlanningFromJira(ticket, options = {}) {
   const useMock = process.env.USE_MOCK_AI === 'true';
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (useMock || !apiKey) {
-    return buildResult(ticket, { ...mockAiPayload(ticket) }, 'mock');
+    return buildResult(ticket, { ...mockAiPayload(ticket) }, 'mock', options);
   }
 
   try {
@@ -147,13 +147,13 @@ export async function generatePlanningFromJira(ticket) {
       planning?.implementationPlan;
 
     if (!hasPlanning) {
-      return buildResult(ticket, mockAiPayload(ticket), 'mock-fallback');
+      return buildResult(ticket, mockAiPayload(ticket), 'mock-fallback', options);
     }
 
-    return buildResult(ticket, parsed, 'gemini');
+    return buildResult(ticket, parsed, 'gemini', options);
   } catch (err) {
     if (isQuotaError(err)) {
-      return buildResult(ticket, mockAiPayload(ticket), 'mock-quota');
+      return buildResult(ticket, mockAiPayload(ticket), 'mock-quota', options);
     }
     throw err;
   }

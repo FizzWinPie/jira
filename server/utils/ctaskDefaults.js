@@ -4,7 +4,7 @@ import { formatPlannedDate, pickChangeOwner } from './changeRequestDefaults.js';
 const TASK_TYPES = [
   'Pre-Implementation',
   'Implementation',
-  'Validation-required',
+  'Validation',
 ];
 
 const ASSIGNED_PERSONAS = [
@@ -75,7 +75,7 @@ function shortDescriptionFor(taskType, ticket, changeRequest) {
       return `Pre-implementation readiness and CAB prep for ${summary}`;
     case 'Implementation':
       return `Execute implementation and deployment for ${summary}`;
-    case 'Validation-required':
+    case 'Validation':
       return `Post-implementation validation and sign-off for ${summary}`;
     default:
       return summary;
@@ -93,7 +93,7 @@ export function detailedDescriptionFor(taskType, ticket, changeRequest) {
   const typeBlock = {
     'Pre-Implementation': `Pre-implementation activities for ${key}:\n• Confirm CAB approval and change window (${changeRequest.maintenanceWindow})\n• Validate ${changeRequest.environment} prerequisites\n• Review runbooks with ${changeRequest.owningGroup}`,
     Implementation: `Implementation activities for ${key}:\n• Deploy changes to ${changeRequest.environment}\n• Execute deployment steps per implementation plan\n• Coordinate with ${changeRequest.changeOwner} for execution`,
-    'Validation-required': `Validation activities for ${key}:\n• Execute test cases and acceptance criteria\n• Confirm monitoring and health checks\n• Document results for PIR`,
+    'Validation': `Validation activities for ${key}:\n• Execute test cases and acceptance criteria\n• Confirm monitoring and health checks\n• Document results for PIR`,
   };
 
   return `${typeBlock[taskType] || typeBlock.Implementation}\n\nJira context — ${summary}\n\n${desc}${
@@ -104,7 +104,7 @@ export function detailedDescriptionFor(taskType, ticket, changeRequest) {
 export function enrichCtaskDoc(task, changeRequest, ticket) {
   const doc = task.toObject ? task.toObject() : { ...task };
   const taskType =
-    doc.taskType === 'Validation' ? 'Validation-required' : doc.taskType;
+    doc.taskType === 'Validation' ? 'Validation' : doc.taskType;
 
   return {
     ...doc,

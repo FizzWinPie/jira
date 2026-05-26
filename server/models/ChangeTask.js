@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const TASK_TYPES = [
   'Pre-Implementation',
   'Implementation',
-  'Validation-required',
+  'Validation',
 ];
 const TASK_STATES = ['Open', 'Closed'];
 const changeTaskSchema = new mongoose.Schema(
