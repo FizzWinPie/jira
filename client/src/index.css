@@ -105,6 +105,57 @@ button {
   margin-left: auto;
 }
 
+.app-header-cr-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-left: auto;
+}
+
+.cr-detail-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  padding: 0.25rem 0;
+}
+
+.cr-header-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+  border-radius: 8px;
+  border: 0.1px solid transparent;
+}
+
+.cr-header-btn-save {
+  background: #f5b335;
+  color: #000;
+  border-color: #e5a020;
+}
+
+.cr-header-btn-save:hover {
+  background: #f0a820;
+}
+
+.cr-header-btn-outline {
+  background: #fff;
+  color: var(--swa-blue);
+  border-color: var(--swa-blue);
+}
+
+.cr-header-btn-outline:hover {
+  background: #eef2ff;
+}
+
 .app-header-icon-btn {
   display: inline-flex;
   align-items: center;

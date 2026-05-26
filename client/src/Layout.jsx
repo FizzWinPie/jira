@@ -1,5 +1,6 @@
-import { Link, Outlet, useParams } from 'react-router-dom';
+import { Link, Outlet, useNavigate, useParams } from 'react-router-dom';
 import iconUrl from './assets/icon.png';
+import ChangeRequestActions from './components/ChangeRequestActions';
 
 function IconMenu() {
   return (
@@ -42,12 +43,18 @@ function IconMessages() {
 }
 
 export default function Layout() {
+  const navigate = useNavigate();
   const { chgNumber, ctaskNumber } = useParams();
   const chg = chgNumber?.toUpperCase();
   const ctask = ctaskNumber?.toUpperCase();
   const onList = !chgNumber;
+  const onChangeRequest = Boolean(chg);
   const backTo = ctask ? `/changes/${chg}` : chg ? '/changes' : null;
   const recordId = ctask || chg;
+
+  const handleSaveAndExit = () => {
+    navigate('/changes');
+  };
 
   return (
     <>
@@ -92,6 +99,12 @@ export default function Layout() {
             <label className="app-header-search">
               <input type="search" placeholder="Search" aria-label="Search" />
             </label>
+          )}
+          {onChangeRequest && (
+            <ChangeRequestActions
+              className="app-header-cr-actions"
+              onSaveAndExit={handleSaveAndExit}
+            />
           )}
         </div>
       </header>

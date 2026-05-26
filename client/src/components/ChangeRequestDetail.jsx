@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { fetchChangeTasks } from '../api';
+import ChangeRequestActions from './ChangeRequestActions';
 import ChangeRequestTabs from './ChangeRequestTabs';
 import ChangeTasksTable from './ChangeTasksTable';
 
@@ -86,6 +87,10 @@ export default function ChangeRequestDetail({
     { label: 'Change owner', value: changeRequest.changeOwner },
   ];
 
+  const handleSaveAndExit = () => {
+    navigate('/changes');
+  };
+
   return (
     <div className="cr-detail-stack">
       <div className="cr-detail-meta">
@@ -102,6 +107,11 @@ export default function ChangeRequestDetail({
       <div className="cr-detail-section">
         <ChangeRequestTabs changeRequest={changeRequest} />
       </div>
+
+      <ChangeRequestActions
+        className="cr-detail-actions"
+        onSaveAndExit={handleSaveAndExit}
+      />
 
       <div className="cr-detail-section">
         <section className="ctask-section">
