@@ -1,8 +1,3 @@
-function stateClass(state) {
-  const key = (state || '').toLowerCase().replace(/\s+/g, '-');
-  return `state-pill state-${key}`;
-}
-
 export default function ChangeRequestsTable({
   changeRequests,
   selectedNumber,
@@ -59,26 +54,14 @@ export default function ChangeRequestsTable({
                 tabIndex={0}
                 aria-selected={isSelected}
               >
-                <td>
-                  <strong>{num}</strong>
-                </td>
+                <td className="cr-link-cell">{num}</td>
                 <td>{cr.changeType || '—'}</td>
-                <td>
-                  <span className={stateClass(cr.state || cr.status)}>
-                    {cr.state || cr.status || 'In Progress'}
-                  </span>
-                </td>
+                <td>{cr.state || cr.status || 'In Progress'}</td>
                 <td className="cr-title-cell">
                   {cr.shortDescription || cr.title || '—'}
                 </td>
-                <td>
-                  <span
-                    className={`env-pill env-${(cr.environment || '').toLowerCase()}`}
-                  >
-                    {cr.environment || '—'}
-                  </span>
-                </td>
-                <td className="mono-cell">{cr.owningGroup || '—'}</td>
+                <td>{cr.environment || '—'}</td>
+                <td className="cr-link-cell">{cr.owningGroup || '—'}</td>
                 <td>{cr.changeOwner || '—'}</td>
                 <td className="mono-cell">{cr.plannedStartDate || '—'}</td>
                 <td className="mono-cell">{cr.plannedEndDate || '—'}</td>
@@ -87,7 +70,6 @@ export default function ChangeRequestsTable({
           })}
         </tbody>
       </table>
-      <p className="cr-table-hint">Click a row to view change request details.</p>
     </div>
   );
 }
